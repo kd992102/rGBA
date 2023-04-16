@@ -1,0 +1,56 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "build",
+            "command": "C:\\msys64\\mingw32\\bin",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-I",
+                "m32",
+                "src/include",
+                "-L",
+                "src/lib",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "${file}",
+                "-lmingw32",
+                "-lSDL2main",
+                "-lSDL2",
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "偵錯工具產生的工作。"
+        },
+        {
+            "type": "cppbuild",
+            "label": "build",
+            "command": "C:\\msys64\\mingw32\\bin",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-lSDL2",
+                "${file}",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "編譯器: C:\\msys64\\mingw32\\bin"
+        }
+    ],
+    "version": "2.0.0"
+}
