@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 //#include "typedef.h"
-#include "arm7tdmi.h"
+#include "arm_instruction.h"
 //#include "cart.h"
 
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
         cpu.reg[15] = addr + 0x8;
         ArmInstDec(*((u32 *)(&cpu.Mem[addr])));
     }*/
-    bios = fopen(bios_file_name, "rb");
+    /*bios = fopen(bios_file_name, "rb");
     cpu = malloc(sizeof(Gba_Cpu));
     printf("Gba_Cpu:0x%08x\n", cpu);
     cpu->CpuMode = SYSTEM;
@@ -79,6 +79,25 @@ int main(int argc, char *argv[]){
         //Prefetch
         PreFetch(cpu, cpu->Ptr);
     }
+
+    Release_GbaMem(cpu->GbaMem);
+    free(cpu);
+    cpu = NULL;*/
+    cpu = malloc(sizeof(Gba_Cpu));
+    printf("Gba_Cpu:0x%08x\n", cpu);
+    cpu->CpuMode = SYSTEM;
+    cpu->dMode = ARM_MODE;
+    cpu->GbaMem = malloc(sizeof(Gba_Memory));
+    Init_GbaMem(cpu->GbaMem);
+    cpu->Reg[R1] = 0x8fffffff;
+    cpu->Reg[R2] = 0x7fffffff;
+    cpu->Reg[R3] = 0x1;
+    cpu->Reg[R4] = 0xffffffff;
+    cpu->Reg[R5] = 0x0;
+    CpuStatus(cpu);
+    uint32_t instruction = 0xE0b54291;
+    ArmMULL(cpu, instruction);
+    CpuStatus(cpu);
 
     Release_GbaMem(cpu->GbaMem);
     free(cpu);
