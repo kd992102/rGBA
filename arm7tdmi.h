@@ -28,6 +28,7 @@ typedef struct arm7tdmi{
     uint32_t CPSR;
     uint32_t SPSR;
     uint32_t Ptr;
+    uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];
     Gba_Memory *GbaMem;
@@ -42,4 +43,6 @@ void PreFetchAbort(Gba_Cpu *cpu);
 uint8_t CheckCond(Gba_Cpu *cpu);
 uint16_t ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst);
 uint32_t ArmModeDecode(Gba_Cpu *cpu, uint32_t inst);
+void ArmDataProc(Gba_Cpu *cpu, uint32_t inst);
 uint32_t CpuDecode(Gba_Cpu *cpu, uint32_t inst);
+void CpuStatus(Gba_Cpu *cpu);

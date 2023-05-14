@@ -1,3 +1,4 @@
+#include <string.h>
 #include "arm_instruction.h"
 //EQ = 0,NE,CS,CC,MI,PL,VS,VC,HI,LS,GE,LT,LE
 
@@ -15,6 +16,10 @@ void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
         cpu->fetchcache[1] = MemRead(cpu, BaseAddr + 0x2);
         cpu->fetchcache[0] = MemRead(cpu, BaseAddr + 0x4);
     }
+    for(int i=0;i<16;i++){
+        memset(&cpu->Reg[i],0,4);
+    }
+    memset(&cpu->CPSR,0,4);
 }
 
 uint8_t CheckCond(Gba_Cpu *cpu){
@@ -68,7 +73,7 @@ uint8_t CheckCond(Gba_Cpu *cpu){
         case AL:
             return 1;
         default:
-            return 0;
+            return 1;
     }
 }
 
@@ -112,4 +117,12 @@ uint32_t CpuDecode(Gba_Cpu *cpu, uint32_t inst)
             ThumbModeDecode(cpu, inst);
             return 0;
     }
+}
+
+void CpuStatus(Gba_Cpu *cpu){
+    for(int i=0;i<16;i++){
+        printf("R[%02d]:%08x\n", i, cpu->Reg[i]);
+    }
+    printf("CPSR:%08x\n", cpu->CPSR);
+    printf("N:%d,Z:%d,C:%d,V:%d\n", (cpu->CPSR >> 31) & 0x1, (cpu->CPSR >> 30) & 0x1, (cpu->CPSR >> 29) & 0x1, (cpu->CPSR >> 28) & 0x1);
 }
