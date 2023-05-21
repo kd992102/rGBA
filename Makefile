@@ -2,7 +2,7 @@ all: main.out
 
 CC = gcc
 INCLUDE = .
-CFLAGS = -g
+CFLAGS = -m32 -g
 main.o: main.c
 	$(CC) -I $(INCLUDE) $(CFLAGS) -c main.c
 

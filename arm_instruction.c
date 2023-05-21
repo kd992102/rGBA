@@ -232,7 +232,7 @@ void ArmMUL(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rn = (inst >> 12) & 0xf;
     uint8_t Rs = (inst >> 8) & 0xf;
     uint8_t Rm = inst & 0xf;
-    uint8_t cpu->carry_out = 0;
+    cpu->carry_out = 0;
     if(1){
         if(Acc){
             //MLA
@@ -307,6 +307,52 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rn = (inst >> 16) & 0xf;
     uint8_t Rd = (inst >> 12) & 0xf;
     uint8_t Offset = (inst) & 0xfff;
+    uint32_t Opr;
+    //printf("Offset : %d, Imm:%d\n", Offset, Imm);
+    if(Imm)Opr = cpu->Reg[(Offset & 0xf)];
+    else{Opr = Offset;}
+    if(!U_bit)Opr = 0 - Opr;
+    if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
+    if(L_bit){
+        //LDR
+        if(B_bit){
+            cpu->Reg[Rd] = cpu->Reg[Rd] & 0xffffff00;
+            switch((cpu->Reg[Rn] + Opr) % 4){
+                case 0:
+                    cpu->Reg[Rd] |= MemRead(cpu, cpu->Reg[Rn] + Opr) & 0xff;
+                    break;
+                case 1:
+                    cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
+                    break;
+                case 2:
+                    cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
+                    break;
+                case 3:
+                    cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
+                    break;
+            }
+        }
+        else{
+            if((cpu->Reg[Rn] + Opr) % 4){
+                printf("Address Must Be Multiply with 4!!!\n");
+                //exit();
+            }
+            else{
+                cpu->Reg[Rd] = MemRead(cpu, cpu->Reg[Rn] + Opr) ;
+            }
+        }
+    }
+    else{
+        //STR
+        //if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
+        if(B_bit){
+            MemWrite(cpu, cpu->Reg[Rn] + Opr, cpu->Reg[Rd] & 0xff | (cpu->Reg[Rd] & 0xff) << 8 | (cpu->Reg[Rd] & 0xff) << 16 | (cpu->Reg[Rd] & 0xff) << 24);
+        }
+        else{
+            MemWrite(cpu, cpu->Reg[Rn] + Opr, cpu->Reg[Rd]);
+        }
+    }
+    if(!P_bit)cpu->Reg[Rn] += Opr;
 }
 void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){}
 void ArmUDF(Gba_Cpu *cpu, uint32_t inst){}
