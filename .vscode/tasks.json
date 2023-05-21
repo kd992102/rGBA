@@ -3,7 +3,7 @@
         {
             "type": "cppbuild",
             "label": "build",
-            "command": "C:\\msys64\\mingw32\\bin",
+            "command": "C:\\msys64\\mingw64\\bin",
             "args": [
                 "-fdiagnostics-color=always",
                 "-I",

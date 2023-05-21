@@ -89,14 +89,14 @@ int main(int argc, char *argv[]){
     cpu->dMode = ARM_MODE;
     cpu->GbaMem = malloc(sizeof(Gba_Memory));
     Init_GbaMem(cpu->GbaMem);
-    cpu->Reg[R1] = 0x8fffffff;
-    cpu->Reg[R2] = 0x7fffffff;
-    cpu->Reg[R3] = 0x1;
-    cpu->Reg[R4] = 0xffffffff;
+    cpu->Reg[R1] = 0xffffffff;
+    cpu->Reg[R2] = 0x2000004;
+    cpu->Reg[R3] = 0x56;
+    cpu->Reg[R4] = 0x0000008;
     cpu->Reg[R5] = 0x0;
     CpuStatus(cpu);
-    uint32_t instruction = 0xE0b54291;
-    ArmMULL(cpu, instruction);
+    uint32_t instruction = 0xE6821004;
+    ArmSDT(cpu, instruction);
     CpuStatus(cpu);
 
     Release_GbaMem(cpu->GbaMem);
