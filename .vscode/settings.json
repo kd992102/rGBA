@@ -3,6 +3,7 @@
     "C_Cpp.default.intelliSenseMode": "windows-gcc-x64",
     "files.associations": {
         "instructions.h": "c",
-        "arm_decode.h": "c"
+        "arm_decode.h": "c",
+        "compare": "c"
     }
 }

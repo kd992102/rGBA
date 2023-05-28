@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 //#include "typedef.h"
+#include "arm7tdmi.h"
 #include "arm_instruction.h"
+#include "thumb_instruction.h"
 //#include "cart.h"
 
 
@@ -89,16 +91,21 @@ int main(int argc, char *argv[]){
     cpu->dMode = ARM_MODE;
     cpu->GbaMem = malloc(sizeof(Gba_Memory));
     Init_GbaMem(cpu->GbaMem);
-    cpu->Reg[R1] = 0xffffffff;
-    cpu->Reg[R2] = 0x2000004;
-    cpu->Reg[R3] = 0x56;
+    cpu->Reg[R0] = 0x20;
+    cpu->Reg[R1] = 0x0;
+    cpu->Reg[R2] = 0x56;
+    cpu->Reg[R3] = 0xffff;
     cpu->Reg[R4] = 0x0000008;
     cpu->Reg[R5] = 0x0;
+    cpu->Reg[R6] = 0x2000020;
+    cpu->Reg[R7] = 0x30;
     CpuStatus(cpu);
-    uint32_t instruction = 0xE6821004;
-    ArmSDT(cpu, instruction);
+    //uint32_t instruction = 0xE1021091;
+    //ArmSWP(cpu, instruction);
+    uint16_t instruction = 0x18D1;
+    cpu->CpuMode = THUMB_MODE;
+    ThumbAS(cpu, instruction);
     CpuStatus(cpu);
-
     Release_GbaMem(cpu->GbaMem);
     free(cpu);
     cpu = NULL;

@@ -1,5 +1,3 @@
-#include "arm7tdmi.h"
-
 void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst);
 void ThumbCondB(Gba_Cpu *cpu, uint16_t inst);
 void ThumbSWI(Gba_Cpu *cpu, uint16_t inst);
