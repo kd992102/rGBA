@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include "arm7tdmi.h"
 #include "arm_instruction.h"
 
 uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result){
@@ -48,7 +50,7 @@ uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result)
 }
 
 void CPSRupdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB){
-        printf("A:%08x, B:%08x, res:%08x\n",parameterA, parameterB,result);
+    printf("A:%08x, B:%08x, res:%08x\n",parameterA, parameterB,result);
     if((result >> 31))cpu->CPSR = cpu->CPSR | 0x80000000;//N flag
     else{cpu->CPSR = cpu->CPSR & 0x7fffffff;}
 
@@ -88,7 +90,7 @@ void CPSRupdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t paramete
     else{
         if(cpu->carry_out)cpu->CPSR = cpu->CPSR | 0x20000000;
         else{cpu->CPSR = cpu->CPSR & 0xdfffffff;}
-           //V unaffected
+        //V unaffected
     }
 }
 
@@ -217,6 +219,12 @@ void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
         //printf("Ptr:0x%08x\n", cpu->Ptr);
     }
 }
+
+uint32_t ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
+    if((inst >> 25) & 0x7 == 0x7)ArmBranch(cpu, inst);
+    return 0;
+}
+
 void ArmBX(Gba_Cpu *cpu, uint32_t inst){
     if(CheckCond(cpu)){
         cpu->Reg[PC] = cpu->Reg[(inst & 0xf)];
@@ -224,7 +232,33 @@ void ArmBX(Gba_Cpu *cpu, uint32_t inst){
         else{cpu->dMode = ARM_MODE;}
     }
 }
-void ArmSWP(Gba_Cpu *cpu, uint32_t inst){}
+void ArmSWP(Gba_Cpu *cpu, uint32_t inst){
+    uint8_t B_bit = (inst >> 22) & 0x1;
+    uint32_t Rn = (inst >> 16) & 0xf;
+    uint32_t Rd = (inst >> 12) & 0xf;
+    uint32_t Rm = inst & 0xf;
+    uint32_t tmp = 0;
+    MemWrite(cpu, 0x2000000, 0xaaaaaaaa);
+    if(B_bit){
+        //byte
+        cpu->Reg[Rd] = cpu->Reg[Rd] & 0xff;
+        tmp = cpu->Reg[Rd];
+        cpu->Reg[Rd] = (uint32_t)(MemRead(cpu, cpu->Reg[Rn]) & 0xff);
+        //printf("Rm %08x tmp %08x\n", cpu->Reg[Rm], tmp);
+        if(Rd == Rm)MemWrite(cpu, cpu->Reg[Rn], tmp);
+        else{MemWrite(cpu, cpu->Reg[Rn], cpu->Reg[Rm] & 0xff);}
+        //printf("Content %08x\n", MemRead(cpu, cpu->Reg[Rn]));
+    }
+    else{
+        //word
+        tmp = cpu->Reg[Rd];
+        cpu->Reg[Rd] = (uint32_t)(MemRead(cpu, cpu->Reg[Rn]));
+        //printf("Rm %08x tmp %08x\n", cpu->Reg[Rm], tmp);
+        if(Rd == Rm)MemWrite(cpu, cpu->Reg[Rn], tmp);
+        else{MemWrite(cpu, cpu->Reg[Rn], cpu->Reg[Rm]);}
+        //printf("Content %08x\n", MemRead(cpu, cpu->Reg[Rn]));
+    }
+}
 void ArmMUL(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Acc = (inst >> 21) & 0x1;
     uint8_t S_bit = (inst >> 20) & 0x1;
@@ -354,6 +388,121 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     }
     if(!P_bit)cpu->Reg[Rn] += Opr;
 }
-void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){}
+void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
+    uint8_t Imm = (inst >> 22) & 0x1;
+    uint8_t P_bit = (inst >> 24) & 0x1;
+    uint8_t U_bit = (inst >> 23) & 0x1;
+    //uint8_t B_bit = (inst >> 22) & 0x1;
+    uint8_t W_bit = (inst >> 21) & 0x1;
+    uint8_t L_bit = (inst >> 20) & 0x1;
+    uint8_t Rn = (inst >> 16) & 0xf;
+    uint8_t Rd = (inst >> 12) & 0xf;
+    uint8_t SH = (inst >> 5) & 0x3;
+    uint8_t Rm = inst & 0xf;
+    uint32_t Opr;
+    //printf("Offset : %d, Imm:%d\n", Offset, Imm);
+    if(Imm){Opr = (((inst >> 8) & 0xf) << 4) | (inst & 0xf);}
+    else{Opr = cpu->Reg[Rm];}
+    if(!U_bit)Opr = 0 - Opr;
+    if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
+    if(L_bit){
+        //LDR
+        //MemWrite(cpu, cpu->Reg[Rn] + Opr, 0xaaaaaaaa);
+        if(SH == 2)cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;
+        else{cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;}
+        switch((cpu->Reg[Rn] + Opr) % 4){
+            case 0:
+                if(SH==2)cpu->Reg[Rd] |= MemRead(cpu, cpu->Reg[Rn] + Opr) & 0xff;
+                else{cpu->Reg[Rd] |= MemRead(cpu, cpu->Reg[Rn] + Opr) & 0xffff;}
+                break;
+            case 1:
+                if(SH==2)cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
+                break;
+            case 2:
+                if(SH==2)cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
+                else{cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xffff;}
+                break;
+            case 3:
+                if(SH==2)cpu->Reg[Rd] |= (MemRead(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
+                break;
+        }
+        if(SH == 2)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 24)) >> 24);
+        else if(SH == 3)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 16)) >> 16);
+    }
+    else{
+        //STR
+        //printf("STRH\n");
+        if(SH == 1){
+            MemWrite(cpu, cpu->Reg[Rn] + Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
+            //printf("Rd:%08x, addr:%08x, value:%08x\n", cpu->Reg[Rd], cpu->Reg[Rn] + Opr, MemRead(cpu, cpu->Reg[Rn] + Opr));
+        }
+    }
+    if(!P_bit)cpu->Reg[Rn] += Opr;
+}
 void ArmUDF(Gba_Cpu *cpu, uint32_t inst){}
-void ArmBDT(Gba_Cpu *cpu, uint32_t inst){}
+void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
+    uint8_t P_bit = (inst >> 24) & 0x1;
+    uint8_t U_bit = (inst >> 23) & 0x1;
+    uint8_t S_bit = (inst >> 22) & 0x1;
+    uint8_t W_bit = (inst >> 21) & 0x1;
+    uint8_t L_bit = (inst >> 20) & 0x1;
+    uint32_t Rn = (inst >> 16) & 0xf;
+    uint16_t RegList = inst & 0xffff;
+    uint8_t shift = 0;
+    uint32_t RWaddr = cpu->Reg[Rn];
+    //MemWrite(cpu, cpu->Reg[Rn], 0xdddddddd);
+    //MemWrite(cpu, cpu->Reg[Rn] - 0x4, 0xaaaaaaaa);
+    //MemWrite(cpu, cpu->Reg[Rn] - 0x8, 0xbbbbbbbb);
+    //MemWrite(cpu, cpu->Reg[Rn] - 0xc, 0xcccccccc);
+    //printf("done\n");
+    if(L_bit){
+        //LDM
+        while(shift < 16){
+            if(U_bit){
+                if((RegList >> shift) & 0x1){
+                    if(P_bit)RWaddr += 4;
+                    if(W_bit)cpu->Reg[Rn] = RWaddr;
+                    cpu->Reg[shift] = MemRead(cpu, RWaddr);
+                    if(!P_bit)RWaddr += 4;
+                }
+            }
+            else{
+                //printf("in U=0, %d\n", 15-shift);
+                if((RegList >> (15 - shift)) & 0x1){
+                    if(P_bit)RWaddr -= 4;
+                    if(W_bit)cpu->Reg[Rn] = RWaddr;
+                    printf("addr %08x\n", RWaddr);
+                    cpu->Reg[15 - shift] = MemRead(cpu, RWaddr);
+                    if(!P_bit)RWaddr -= 4;
+                }
+            }
+            printf("shift %d\n", shift);
+            shift+=1;
+        }
+    }
+    else{
+        //STM
+        while(shift < 16){
+            if(U_bit){
+                if((RegList >> shift) & 0x1){
+                    if(P_bit)RWaddr += 4;
+                    if(W_bit)cpu->Reg[Rn] = RWaddr;
+                    MemWrite(cpu, RWaddr, cpu->Reg[shift]);
+                    printf("addr:%08x, data:%08x\n", RWaddr, MemRead(cpu, RWaddr));
+                    if(!P_bit)RWaddr += 4;
+                }
+            }
+            else{
+                if((RegList >> (15 - shift)) & 0x1){
+                    if(P_bit)RWaddr -= 4;
+                    if(W_bit)cpu->Reg[Rn] = RWaddr;
+                    //printf("addr %08x, R%d\n", RWaddr, 15 - shift);
+                    MemWrite(cpu, RWaddr, cpu->Reg[15 - shift]);
+                    printf("data:%08x\n", MemRead(cpu, RWaddr));
+                    if(!P_bit)RWaddr -= 4;
+                }
+            }
+            shift+=1;
+        }
+    }
+}

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "arm_instruction.h"
+#include "arm7tdmi.h"
 //EQ = 0,NE,CS,CC,MI,PL,VS,VC,HI,LS,GE,LT,LE
 
 void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
@@ -98,11 +98,6 @@ void PreFetch(Gba_Cpu *cpu, uint32_t Addr){
 }
 
 uint16_t ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
-    return 0;
-}
-
-uint32_t ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
-    if((inst >> 25) & 0x7 == 0x7)ArmBranch(cpu, inst);
     return 0;
 }
 
