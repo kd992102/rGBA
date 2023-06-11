@@ -1,5 +1,9 @@
 #include "memory.h"
 
+#define A_ADD 1
+#define A_SUB 0
+#define LOG 2
+
 enum DECODE_MODE{
     ARM_MODE = 0,THUMB_MODE
 };
@@ -24,10 +28,28 @@ typedef struct arm7tdmi{
     enum CPU_MODE CpuMode;
     enum DECODE_MODE dMode;
     enum COND Cond;
+
+    //System & User
     uint32_t Reg[15];
+    //FIQ
+    uint32_t Reg_fiq[7];//8-14
+    uint32_t SPSR_fiq;
+    //Supervisor
+    uint32_t Reg_svc[2];//13、14
+    uint32_t SPSR_svc;
+    //Abort
+    uint32_t Reg_abt[2];//13、14
+    uint32_t SPSR_abt;
+    //IRQ
+    uint32_t Reg_irq[2];//13、14
+    uint32_t SPSR_irq;
+    //Undefined
+    uint32_t Reg_und[2];//13、14
+    uint32_t SPSR_und;
+
     uint32_t CPSR;
     uint32_t SPSR;
-    uint32_t Ptr;
+    uint32_t Ptr;//Current execute instruction
     uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];
@@ -36,13 +58,24 @@ typedef struct arm7tdmi{
 
 //uint32_t FileSize(FILE *ptr);
 void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr);
-uint32_t MemRead(Gba_Cpu *cpu, uint32_t addr);
-void MemWrite(Gba_Cpu *cpu, uint32_t addr, uint32_t data);
+
+uint32_t MemRead32(Gba_Cpu *cpu, uint32_t addr);
+uint16_t MemRead16(Gba_Cpu *cpu, uint32_t addr);
+uint8_t MemRead8(Gba_Cpu *cpu, uint32_t addr);
+void MemWrite32(Gba_Cpu *cpu, uint32_t addr, uint32_t data);
+void MemWrite16(Gba_Cpu *cpu, uint32_t addr, uint16_t data);
+void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data);
+
+void ProcModeChg(Gba_Cpu *cpu);
+
 void PreFetch(Gba_Cpu *cpu, uint32_t Addr);
+
+//Exeception
+void Reset(Gba_Cpu *cpu);
+void FIQ_handler(Gba_Cpu *cpu);
+void IRQ_habdler(Gba_Cpu *cpu);
+void DataAbort(Gba_Cpu *cpu);
 void PreFetchAbort(Gba_Cpu *cpu);
+void Undefined(Gba_Cpu *cpu);
 uint8_t CheckCond(Gba_Cpu *cpu);
-uint16_t ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst);
-uint32_t ArmModeDecode(Gba_Cpu *cpu, uint32_t inst);
-void ArmDataProc(Gba_Cpu *cpu, uint32_t inst);
-uint32_t CpuDecode(Gba_Cpu *cpu, uint32_t inst);
-void CpuStatus(Gba_Cpu *cpu);
+void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);

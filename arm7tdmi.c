@@ -1,20 +1,22 @@
 #include <string.h>
 #include "arm7tdmi.h"
+#include "arm_instruction.h"
+#include "thumb_instruction.h"
 //EQ = 0,NE,CS,CC,MI,PL,VS,VC,HI,LS,GE,LT,LE
 
 void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
     if(cpu->dMode == ARM_MODE){
         cpu->Reg[PC] = BaseAddr + 0x8;
-        cpu->fetchcache[2] = MemRead(cpu, BaseAddr);
-        cpu->fetchcache[1] = MemRead(cpu, BaseAddr + 0x4);
-        cpu->fetchcache[0] = MemRead(cpu, BaseAddr + 0x8);
+        cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
+        cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x4);
+        cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x8);
     }
     else{
         //THUMB_MODE
         cpu->Reg[PC] = BaseAddr + 0x4;
-        cpu->fetchcache[2] = MemRead(cpu, BaseAddr);
-        cpu->fetchcache[1] = MemRead(cpu, BaseAddr + 0x2);
-        cpu->fetchcache[0] = MemRead(cpu, BaseAddr + 0x4);
+        cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
+        cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x2);
+        cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x4);
     }
     for(int i=0;i<16;i++){
         memset(&cpu->Reg[i],0,4);
@@ -77,47 +79,91 @@ uint8_t CheckCond(Gba_Cpu *cpu){
     }
 }
 
-uint32_t MemRead(Gba_Cpu *cpu, uint32_t addr){
+uint32_t MemRead32(Gba_Cpu *cpu, uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
-    if(cpu->dMode == ARM_MODE)return *((uint32_t *)RelocAddr);
-    else if(cpu->dMode == THUMB_MODE){
-        return *((uint16_t *)RelocAddr);
-    }
+    return *((uint32_t *)RelocAddr);
 }
 
-void MemWrite(Gba_Cpu *cpu, uint32_t addr, uint32_t data){
+uint16_t MemRead16(Gba_Cpu *cpu, uint32_t addr){
+    uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    return *((uint16_t *)RelocAddr);
+}
+
+uint8_t MemRead8(Gba_Cpu *cpu, uint32_t addr){
+    uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    return *((uint8_t *)RelocAddr);
+}
+
+void MemWrite32(Gba_Cpu *cpu, uint32_t addr, uint32_t data){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     *((uint32_t *)RelocAddr) = data;
+}
+
+void MemWrite16(Gba_Cpu *cpu, uint32_t addr, uint16_t data){
+    uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    *((uint16_t *)RelocAddr) = data;
+}
+
+void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data){
+    uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    *((uint8_t *)RelocAddr) = data;
+}
+
+void Reset(Gba_Cpu *cpu){
+    cpu->Reg_svc[2] = cpu->Reg[PC];
+    cpu->SPSR_svc = cpu->CPSR;
+    cpu->CPSR = cpu->CPSR & 0xffffff00;//
+    cpu->CPSR = cpu->CPSR | 0xd3;//set I、F, clear T
+    //
+}
+
+void ProcModeChg(Gba_Cpu *cpu){
+    uint8_t Mode_bit = cpu->SPSR & 0x1f;
+    switch(Mode_bit){
+        case 0x10:
+            //User
+        case 0x11:
+            //FIQ
+        case 0x12:
+            //IRQ
+        case 0x13:
+            //Supervisor
+        case 0x17:
+            //ABT
+        case 0x1B:
+            //UDF
+        case 0x1f:
+            //System
+    }
 }
 
 void PreFetch(Gba_Cpu *cpu, uint32_t Addr){
     cpu->Reg[PC] = Addr + 0x8;
     cpu->fetchcache[2] = cpu->fetchcache[1];
     cpu->fetchcache[1] = cpu->fetchcache[0];
-    cpu->fetchcache[0] = MemRead(cpu, cpu->Reg[PC]);
+    cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC]);
 }
 
-uint16_t ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
-    return 0;
-}
+void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB){
+    uint8_t NZCV = 0x0;
+    if((result >> 31))NZCV |= 0x8;//N flag
 
-uint32_t CpuDecode(Gba_Cpu *cpu, uint32_t inst)
-{
-    switch(cpu->dMode){
-        case ARM_MODE:
-            cpu->Cond = (inst >> 28) & 0xf;
-            ArmModeDecode(cpu, inst);
-            return 0;
-        case THUMB_MODE:
-            ThumbModeDecode(cpu, inst);
-            return 0;
+    if(!result)NZCV |= 0x4;//Z flag
+
+    if(LOG){
+        if(cpu->carry_out)NZCV |= 0x2;
     }
-}
+    else if(A_ADD){
+        if(result < parameterA)NZCV |= 0x2;
 
-void CpuStatus(Gba_Cpu *cpu){
-    for(int i=0;i<16;i++){
-        printf("R[%02d]:%08x\n", i, cpu->Reg[i]);
+        //V
+        if(!(((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
     }
-    printf("CPSR:%08x\n", cpu->CPSR);
-    printf("N:%d,Z:%d,C:%d,V:%d\n", (cpu->CPSR >> 31) & 0x1, (cpu->CPSR >> 30) & 0x1, (cpu->CPSR >> 29) & 0x1, (cpu->CPSR >> 28) & 0x1);
+    else if(A_SUB){
+        if(parameterA >= parameterB)NZCV |= 0x2;
+        //V
+        if((((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
+    }
+    cpu->CPSR &= 0xfffffff;
+    cpu->CPSR |= (NZCV << 28);
 }
