@@ -5,6 +5,7 @@
 #include "arm7tdmi.h"
 #include "arm_instruction.h"
 #include "thumb_instruction.h"
+#include "cpu.h"
 //#include "cart.h"
 
 
@@ -18,13 +19,8 @@ static const char bios_file_name[] = "gba_bios.bin";
 static const char rom_file_name[] = "pok_g_386.gba";
 
 int main(int argc, char *argv[]){
-    /*
-    for(int addr=0;addr<128;addr+=4){
-        printf("0x%08x ", *((u32 *)(&cpu.Mem[addr])));
-        cpu.reg[15] = addr + 0x8;
-        ArmInstDec(*((u32 *)(&cpu.Mem[addr])));
-    }*/
-    /*bios = fopen(bios_file_name, "rb");
+
+    bios = fopen(bios_file_name, "rb");
     cpu = malloc(sizeof(Gba_Cpu));
     printf("Gba_Cpu:0x%08x\n", cpu);
     cpu->CpuMode = SYSTEM;
@@ -66,6 +62,7 @@ int main(int argc, char *argv[]){
         rom = NULL;
         return 1;
     }
+    
     cpu->Ptr = 0x00000000;//First ptr
     InitCpu(cpu, 0x00000000);
     for(int addr=0x00000000;addr<0x00000040;addr+=4){
@@ -78,14 +75,15 @@ int main(int argc, char *argv[]){
         //Execute
         CpuDecode(cpu, cpu->fetchcache[2]);
         cpu->Ptr += cpu->InstOffset;
+        CpuStatus(cpu);
         //Prefetch
         PreFetch(cpu, cpu->Ptr);
     }
 
     Release_GbaMem(cpu->GbaMem);
     free(cpu);
-    cpu = NULL;*/
-    cpu = malloc(sizeof(Gba_Cpu));
+    cpu = NULL;
+    /*cpu = malloc(sizeof(Gba_Cpu));
     printf("Gba_Cpu:0x%08x\n", cpu);
     cpu->CpuMode = SYSTEM;
     cpu->dMode = ARM_MODE;
@@ -108,6 +106,6 @@ int main(int argc, char *argv[]){
     CpuStatus(cpu);
     Release_GbaMem(cpu->GbaMem);
     free(cpu);
-    cpu = NULL;
+    cpu = NULL;*/
     return 0;
 }
