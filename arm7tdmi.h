@@ -17,7 +17,13 @@ enum ARM_MODE_REG{
 };
 
 enum CPU_MODE{
-    USER = 0, FIQ, IRQ, SVC, ABT, UNDEF, SYSTEM
+    USER = 16,
+    FIQ = 17,
+    IRQ = 18,
+    SVC = 19,
+    ABT = 23,
+    UNDEF = 27, 
+    SYSTEM = 31
 };
 
 typedef enum boolean{
@@ -73,9 +79,10 @@ void PreFetch(Gba_Cpu *cpu, uint32_t Addr);
 //Exeception
 void Reset(Gba_Cpu *cpu);
 void FIQ_handler(Gba_Cpu *cpu);
-void IRQ_habdler(Gba_Cpu *cpu);
+void IRQ_handler(Gba_Cpu *cpu);
 void DataAbort(Gba_Cpu *cpu);
 void PreFetchAbort(Gba_Cpu *cpu);
 void Undefined(Gba_Cpu *cpu);
+void ExceptionHandler(Gba_Cpu *cpu);
 uint8_t CheckCond(Gba_Cpu *cpu);
 void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
