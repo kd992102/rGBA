@@ -5,6 +5,10 @@
 //EQ = 0,NE,CS,CC,MI,PL,VS,VC,HI,LS,GE,LT,LE
 
 void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
+    for(int i=0;i<16;i++){
+        memset(&cpu->Reg[i],0,4);
+    }
+    memset(&cpu->CPSR,0,4);
     if(cpu->dMode == ARM_MODE){
         cpu->Reg[PC] = BaseAddr + 0x8;
         cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
@@ -18,10 +22,6 @@ void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
         cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x2);
         cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x4);
     }
-    for(int i=0;i<16;i++){
-        memset(&cpu->Reg[i],0,4);
-    }
-    memset(&cpu->CPSR,0,4);
 }
 
 uint8_t CheckCond(Gba_Cpu *cpu){
@@ -110,11 +110,36 @@ void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data){
 }
 
 void Reset(Gba_Cpu *cpu){
-    cpu->Reg_svc[2] = cpu->Reg[PC];
-    cpu->SPSR_svc = cpu->CPSR;
-    cpu->CPSR = cpu->CPSR & 0xffffff00;//
+    cpu->Reg_svc[2] = cpu->Reg[PC];//R14 of supervisor mode
+    cpu->SPSR_svc = cpu->CPSR;//backup CPSR
+    cpu->CPSR = cpu->CPSR & 0xffffff00;//clear the I、F、T and mode bit
     cpu->CPSR = cpu->CPSR | 0xd3;//set I、F, clear T
     //
+}
+
+void FIQ_handler(Gba_Cpu *cpu){
+    cpu->Reg_fiq[2] = cpu->Reg[PC] + 0x4;//R14 of fiq mode
+}
+void IRQ_handler(Gba_Cpu *cpu){
+    cpu->Reg_irq[2] = cpu->Reg[PC] + 0x4;//R14 of irq mode
+}
+void DataAbort(Gba_Cpu *cpu){
+    cpu->Reg_abt[2] = cpu->Reg[PC] + 0x8;//R14 of abt mode
+}
+void PreFetchAbort(Gba_Cpu *cpu){
+    cpu->Reg_abt[2] = cpu->Reg[PC] + 0x4;//R14 of abt mode
+}
+void Undefined(Gba_Cpu *cpu){
+    if(cpu->dMode == ARM_MODE){
+        cpu->Reg_und[2] = cpu->Reg[PC] + 0x4;
+    }
+    else{
+        cpu->Reg_und[2] = cpu->Reg[PC] + 0x2;
+    }
+}
+
+void ExceptionHandler(Gba_Cpu *cpu){
+    
 }
 
 void ProcModeChg(Gba_Cpu *cpu){

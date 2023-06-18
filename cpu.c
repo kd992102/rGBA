@@ -106,9 +106,14 @@ uint32_t CpuDecode(Gba_Cpu *cpu, uint32_t inst)
 }
 
 void CpuStatus(Gba_Cpu *cpu){
+    printf("--------register-------\n");
     for(int i=0;i<16;i++){
         printf("R[%02d]:%08x\n", i, cpu->Reg[i]);
     }
+    printf("--------piepeline-------\n");
+    printf("Current Instruction:%08x\n", cpu->Ptr);
+    printf("fetch:%08x\ndecode:%08x\nexecute:%08x\n", cpu->fetchcache[2], cpu->fetchcache[1], cpu->fetchcache[0]);
+    printf("--------status-------\n");
     printf("CPSR:%08x\n", cpu->CPSR);
     printf("N:%d,Z:%d,C:%d,V:%d\n", (cpu->CPSR >> 31) & 0x1, (cpu->CPSR >> 30) & 0x1, (cpu->CPSR >> 29) & 0x1, (cpu->CPSR >> 28) & 0x1);
 }

@@ -71,13 +71,16 @@ int main(int argc, char *argv[]){
         //Prefetch
         if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
         else{cpu->InstOffset = 0x4;}
-        printf("0x%08x, 0x%08x, 0x%08x\n", cpu->Ptr, cpu->Reg[PC], cpu->fetchcache[2]);
+        printf("0x%08x, 0x%08x\n", cpu->Ptr, cpu->Reg[PC]);
         //Execute
-        CpuDecode(cpu, cpu->fetchcache[2]);
+        CpuDecode(cpu, cpu->fetchcache[0]);
+        printf("0x%08x, 0x%08x\n", cpu->Ptr, cpu->Reg[PC]);
         cpu->Ptr += cpu->InstOffset;
-        CpuStatus(cpu);
+        //CpuStatus(cpu);
         //Prefetch
         PreFetch(cpu, cpu->Ptr);
+        CpuStatus(cpu);
+        getchar();
     }
 
     Release_GbaMem(cpu->GbaMem);

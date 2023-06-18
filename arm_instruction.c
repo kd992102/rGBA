@@ -163,7 +163,7 @@ void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
     uint32_t offset;
     if((inst >> 23) & 0x1)offset = (inst << 2) | 0xff000000;
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
-    if((inst >> 24) & 0x1){
+    if((inst >> 24) & 0x1){//Link Bit
         cpu->Reg[LR] = cpu->Reg[PC] + 0x4;//next instruction
     }
     cpu->fetchcache[1] = MemRead32(cpu, cpu->Reg[PC] + (int32_t)offset);
