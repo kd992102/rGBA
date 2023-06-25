@@ -9,19 +9,13 @@ void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
         memset(&cpu->Reg[i],0,4);
     }
     memset(&cpu->CPSR,0,4);
-    if(cpu->dMode == ARM_MODE){
-        cpu->Reg[PC] = BaseAddr + 0x8;
-        cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
-        cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x4);
-        cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x8);
-    }
-    else{
-        //THUMB_MODE
-        cpu->Reg[PC] = BaseAddr + 0x4;
-        cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
-        cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x2);
-        cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x4);
-    }
+    //change to Supervisor mode
+    Reset(cpu);
+    
+    cpu->Reg[PC] = BaseAddr + 0x4;
+    cpu->fetchcache[2] = 0x0;
+    cpu->fetchcache[1] = 0x0;
+    cpu->fetchcache[0] = MemRead32(cpu, BaseAddr);
 }
 
 uint8_t CheckCond(Gba_Cpu *cpu){
@@ -162,33 +156,28 @@ void ProcModeChg(Gba_Cpu *cpu){
     }
 }
 
-void PreFetch(Gba_Cpu *cpu, uint32_t Addr){
-    cpu->Reg[PC] = Addr + 0x8;
-    cpu->fetchcache[2] = cpu->fetchcache[1];
-    cpu->fetchcache[1] = cpu->fetchcache[0];
-    cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC]);
-}
-
 void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB){
     uint8_t NZCV = 0x0;
     if((result >> 31))NZCV |= 0x8;//N flag
 
     if(!result)NZCV |= 0x4;//Z flag
 
-    if(LOG){
+    if(Opcode == LOG){
         if(cpu->carry_out)NZCV |= 0x2;
     }
-    else if(A_ADD){
+    else if(Opcode == A_ADD){
         if(result < parameterA)NZCV |= 0x2;
 
         //V
         if(!(((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
     }
-    else if(A_SUB){
+    else if(Opcode == A_SUB){
+        //printf("A:%08x, B:%08x\n", parameterA, parameterB);
         if(parameterA >= parameterB)NZCV |= 0x2;
         //V
         if((((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
     }
     cpu->CPSR &= 0xfffffff;
     cpu->CPSR |= (NZCV << 28);
+    //printf("NZCV:%08x\n", NZCV);
 }

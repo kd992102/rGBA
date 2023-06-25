@@ -4,6 +4,7 @@
     "files.associations": {
         "instructions.h": "c",
         "arm_decode.h": "c",
-        "compare": "c"
+        "compare": "c",
+        "arm7tdmi.h": "c"
     }
 }
