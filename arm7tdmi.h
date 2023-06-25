@@ -74,8 +74,6 @@ void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data);
 
 void ProcModeChg(Gba_Cpu *cpu);
 
-void PreFetch(Gba_Cpu *cpu, uint32_t Addr);
-
 //Exeception
 void Reset(Gba_Cpu *cpu);
 void FIQ_handler(Gba_Cpu *cpu);

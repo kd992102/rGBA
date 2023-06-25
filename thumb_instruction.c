@@ -25,25 +25,23 @@ void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst){
 }
 void ThumbCondB(Gba_Cpu *cpu, uint16_t inst){
     uint8_t cond = (inst >> 8) & 0xf;
-    uint16_t Offset = inst & 0xff;
+    int8_t Offset = inst & 0xff;
     cpu->Cond = cond;
-    Offset = Offset << 1;
-    if((Offset >> 8))
-    if(CheckCond(cpu)){
-        if((Offset >> 8)){
-            cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC] - Offset) & 0xffff;
-            cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] - Offset + 0x2) & 0xffff;
-            cpu->fetchcache[2] = 0x0;
-            cpu->Ptr = cpu->Reg[PC] - Offset - 0x2;
-        }
-        else{
-            cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC] + Offset) & 0xffff;
-            cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + Offset + 0x2) & 0xffff;
-            cpu->fetchcache[2] = 0x0;
-            cpu->Ptr = cpu->Reg[PC] + Offset - 0x2;
-        }
-        //printf("Ptr:0x%08x\n", cpu->Ptr);
+    //Offset = Offset << 1;
+    printf("Offset:%08x, PC:%08x\n", Offset, cpu->Reg[PC]);
+    if(((Offset >> 7) & 0x1) == 0x1){
+        cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC] + Offset);
+        cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + Offset + 0x2);
+        cpu->Ptr = cpu->Reg[PC];
+        cpu->Ptr += 0x2;
     }
+    else{
+        cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC] + Offset);
+        cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + Offset + 0x2);
+        cpu->Ptr = cpu->Reg[PC];
+        cpu->Ptr += 0x2;
+    }
+        //printf("Ptr:0x%08x\n", cpu->Ptr);
 }
 void ThumbSWI(Gba_Cpu *cpu, uint16_t inst){
     uint8_t value = inst & 0xff;
@@ -280,7 +278,7 @@ void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
 void ThumbPCLOAD(Gba_Cpu *cpu, uint16_t inst){
     uint8_t Rd = (inst >> 8) & 0x7;
     uint8_t Word = inst & 0xff;
-    cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Rd] + Word);
+    cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[PC] - 0x2 + (Word << 2));
 }
 void ThumbLSREG(Gba_Cpu *cpu, uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
@@ -290,7 +288,7 @@ void ThumbLSREG(Gba_Cpu *cpu, uint16_t inst){
     uint8_t Rd = (inst) & 0x7;
     if(L_bit){
         //LDR
-        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]) & 0xff;
+        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]);
         else{cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]);}
     }
     else{
@@ -323,6 +321,7 @@ void ThumbLSIMM(Gba_Cpu *cpu, uint16_t inst){
     uint8_t Offset = (inst >> 6) & 0x1f;
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
+    printf("Rb:%d, Rb:%08x, OFfset:%08x\n", Rb, cpu->Reg[Rb], Offset);
     if(L_bit){
         //LDR
         if(B_bit)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rb] + Offset) & 0xff;

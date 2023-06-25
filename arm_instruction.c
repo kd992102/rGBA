@@ -6,9 +6,13 @@ uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result)
     uint8_t shift_type;
     uint8_t shift;
     if(Imm){
+        //printf("Opr:%08x\n", Opr);
         shift = (((Opr >> 8) & 0xf) << 1);
+        //printf("shift:%d\n", shift);
         cpu->carry_out = ((Opr & 0xff) >> (shift - 1)) & 0x1;
-        result = ((Opr & 0xff) << (32 - shift)) | (Opr >> shift);
+        if(shift != 0)result = ((Opr & 0xff) << (32 - shift)) | ((Opr & 0xff) >> shift);
+        else{result = Opr & 0xff;}
+        //printf("1:%x, 2:%x\n",((Opr & 0xff) << (32 - shift)) ,((Opr & 0xff) >> shift));
     }
     else{
         shift_type = (Opr >> 5) & 0x3;
@@ -33,7 +37,7 @@ uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result)
                 if(shift != 0)cpu->carry_out = (cpu->Reg[(Opr & 0xf)] >> (shift - 1)) & 0x1;
                 break;
             case ROR:
-                if(shift == 1){
+                if(shift == 0){
                     cpu->carry_out = cpu->Reg[(Opr & 0xf)] & 0x1;
                     result = (((cpu->CPSR >> 29) & 0x1) << 31) | (cpu->Reg[(Opr & 0xf)] >> 1);
                 }
@@ -84,6 +88,7 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
     uint32_t Opr2 = (inst) & 0xfff;
     uint32_t exOpr;
     uint8_t S_bit = (inst >> 20) & 0x1;
+    //printf("instruction:%08x\n", inst);
     exOpr = BarrelShifter(cpu, Opr2, (inst >> 25) & 0x1, exOpr);
     if(1){
         switch(Opcode){
@@ -132,7 +137,11 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
             case CMP://arith
                 //SUB
                 if(!S_bit)ArmPSRT(cpu,inst);
-                else{CPSRUpdate(cpu, A_SUB, cpu->Reg[Rn] - exOpr, cpu->Reg[Rn], exOpr);};
+                else{
+                    //printf("cmp\n");
+                    CPSRUpdate(cpu, A_SUB, cpu->Reg[Rn] - exOpr, cpu->Reg[Rn], exOpr);
+                }
+                //printf("CSPR:%08x\n", cpu->CPSR);
                 break;
             case CMN://arith
                 //ADD
@@ -144,6 +153,7 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
                 if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
                 break;
             case MOV://logical
+                //printf("exOpr:%08x\n", exOpr);
                 cpu->Reg[Rd] = exOpr;
                 if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
                 break;
@@ -164,20 +174,39 @@ void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
     if((inst >> 23) & 0x1)offset = (inst << 2) | 0xff000000;
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
     if((inst >> 24) & 0x1){//Link Bit
-        cpu->Reg[LR] = cpu->Reg[PC] + 0x4;//next instruction
+        cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
     }
-    cpu->fetchcache[1] = MemRead32(cpu, cpu->Reg[PC] + (int32_t)offset);
-    cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC] + (int32_t)offset + 0x4);
-    cpu->fetchcache[2] = 0x0;
-    cpu->Ptr = cpu->Reg[PC] + (int32_t)offset - 0x4;
+    //printf("old PC : %08x\n", cpu->Reg[PC]);
+    cpu->Reg[PC] = cpu->Reg[PC] + (int32_t)offset;
+    //printf("PC : %08x\n", cpu->Reg[PC]);
+    cpu->fetchcache[1] = MemRead32(cpu, cpu->Reg[PC]);
+    cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC] + 0x4);
+    cpu->Ptr = cpu->Reg[PC];
+    cpu->Ptr += 0x4;
 }
 
 void ArmBX(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rn = inst & 0xf;
     //if(Rn == PC)Undefined(cpu);//Exception
-    cpu->Reg[PC] = cpu->Reg[Rn];
-    if(cpu->Reg[PC] & 0x1)cpu->dMode = THUMB_MODE;
-    else{cpu->dMode = ARM_MODE;}
+    //cpu->Reg[PC] = cpu->Reg[Rn];
+    cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
+    //printf("Rn:%08x\n", cpu->Reg[Rn]);
+    if(cpu->Reg[Rn] & 0x1 == 0x1){
+        //printf("BX Thumb\n");
+        cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
+        cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+        cpu->Ptr = cpu->Reg[PC];
+        cpu->Ptr += 0x2;
+        printf("After BX Ptr:%08x\n", cpu->Ptr);
+        cpu->dMode = THUMB_MODE;
+    }
+    else{
+        cpu->fetchcache[1] = MemRead32(cpu, cpu->Reg[PC]);
+        cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC] + 0x4);
+        cpu->Ptr = cpu->Reg[PC];
+        cpu->Ptr += 0x4;
+        cpu->dMode = ARM_MODE;
+    }
 }
 void ArmSWP(Gba_Cpu *cpu, uint32_t inst){
     uint8_t B_bit = (inst >> 22) & 0x1;
@@ -236,44 +265,43 @@ void ArmMULL(Gba_Cpu *cpu, uint32_t inst){
     uint8_t RdLo = (inst >> 12) & 0xf;
     uint8_t Rs = (inst >> 8) & 0xf;
     uint8_t Rm = inst & 0xf;
-    if(1){
-        if(Acc){
-            //MLA
-            if(U_bit==0){
-                opr = (((uint64_t)cpu->Reg[RdHi]) << 32) + (uint64_t)cpu->Reg[RdLo];
-                cpu->Reg[RdHi] = (uint32_t)(((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) + opr) & 0xffffffff00000000) >> 32);
-                cpu->Reg[RdLo] = (uint32_t)(((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) + opr) & 0xffffffff));
-            }
-            else{
-                opr = (((int64_t)(int32_t)cpu->Reg[RdHi]) << 32) + (int64_t)(int32_t)cpu->Reg[RdLo];
-                cpu->Reg[RdHi] = (uint32_t)(((((int64_t)(int32_t)cpu->Reg[Rm] * (int64_t)(int32_t)cpu->Reg[Rs]) + opr) & 0xffffffff00000000) >> 32);
-                cpu->Reg[RdLo] = (uint32_t)(((((int64_t)cpu->Reg[Rm] * (int64_t)cpu->Reg[Rs]) + opr) & 0xffffffff));
-            }
-            if(S_bit){
-                if((cpu->Reg[RdHi] >> 31) & 0x1)cpu->CPSR = cpu->CPSR | 0x80000000;
-                else{cpu->CPSR = cpu->CPSR & 0x7fffffff;}
-
-                if(cpu->Reg[RdHi] == 0 && cpu->Reg[RdLo] == 0)cpu->CPSR = cpu->CPSR | 0x40000000;
-                else{cpu->CPSR = cpu->CPSR & 0xbfffffff;}
-            }
+    if(Acc){
+        //MLA
+        if(U_bit==0){
+            opr = (((uint64_t)cpu->Reg[RdHi]) << 32) + (uint64_t)cpu->Reg[RdLo];
+            cpu->Reg[RdHi] = (uint32_t)(((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) + opr) & 0xffffffff00000000) >> 32);
+            cpu->Reg[RdLo] = (uint32_t)(((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) + opr) & 0xffffffff));
         }
         else{
-            //MUL
-            if(U_bit==0){
-                cpu->Reg[RdHi] = (uint32_t)((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) & 0xffffffff00000000) >> 32);
-                cpu->Reg[RdLo] = (uint32_t)((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) & 0xffffffff));
-            }
-            else{
-                cpu->Reg[RdHi] = (uint32_t)((((int64_t)(int32_t)cpu->Reg[Rm] * (int64_t)(int32_t)cpu->Reg[Rs]) & 0xffffffff00000000) >> 32);
-                cpu->Reg[RdLo] = (uint32_t)((((int64_t)cpu->Reg[Rm] * (int64_t)cpu->Reg[Rs]) & 0xffffffff));
-            }
-            if(S_bit){
-                if((cpu->Reg[RdHi] >> 31) & 0x1)cpu->CPSR = cpu->CPSR | 0x80000000;
-                else{cpu->CPSR = cpu->CPSR & 0x7fffffff;}
+            opr = (((int64_t)(int32_t)cpu->Reg[RdHi]) << 32) + (int64_t)(int32_t)cpu->Reg[RdLo];
+            //printf("opr:%08x\n", opr);
+            cpu->Reg[RdHi] = (uint32_t)(((((int64_t)(int32_t)cpu->Reg[Rm] * (int64_t)(int32_t)cpu->Reg[Rs]) + opr) & 0xffffffff00000000) >> 32);
+            cpu->Reg[RdLo] = (uint32_t)(((((int64_t)cpu->Reg[Rm] * (int64_t)cpu->Reg[Rs]) + opr) & 0xffffffff));
+        }
+        if(S_bit){
+            if((cpu->Reg[RdHi] >> 31) & 0x1)cpu->CPSR = cpu->CPSR | 0x80000000;
+            else{cpu->CPSR = cpu->CPSR & 0x7fffffff;}
 
-                if(cpu->Reg[RdHi] == 0 && cpu->Reg[RdLo] == 0)cpu->CPSR = cpu->CPSR | 0x40000000;
-                else{cpu->CPSR = cpu->CPSR & 0xbfffffff;}
-            }
+            if(cpu->Reg[RdHi] == 0 && cpu->Reg[RdLo] == 0)cpu->CPSR = cpu->CPSR | 0x40000000;
+            else{cpu->CPSR = cpu->CPSR & 0xbfffffff;}
+        }
+    }
+    else{
+        //MUL
+        if(U_bit==0){
+            cpu->Reg[RdHi] = (uint32_t)((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) & 0xffffffff00000000) >> 32);
+            cpu->Reg[RdLo] = (uint32_t)((((uint64_t)cpu->Reg[Rm] * (uint64_t)cpu->Reg[Rs]) & 0xffffffff));
+        }
+        else{
+            cpu->Reg[RdHi] = (uint32_t)((((int64_t)(int32_t)cpu->Reg[Rm] * (int64_t)(int32_t)cpu->Reg[Rs]) & 0xffffffff00000000) >> 32);
+            cpu->Reg[RdLo] = (uint32_t)((((int64_t)cpu->Reg[Rm] * (int64_t)cpu->Reg[Rs]) & 0xffffffff));
+        }
+        if(S_bit){
+            if((cpu->Reg[RdHi] >> 31) & 0x1)cpu->CPSR = cpu->CPSR | 0x80000000;
+            else{cpu->CPSR = cpu->CPSR & 0x7fffffff;}
+
+            if(cpu->Reg[RdHi] == 0 && cpu->Reg[RdLo] == 0)cpu->CPSR = cpu->CPSR | 0x40000000;
+            else{cpu->CPSR = cpu->CPSR & 0xbfffffff;}
         }
     }
 }
@@ -297,19 +325,20 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     if(L_bit){
         //LDR
         if(B_bit){
+            //printf("B-bit\n");
             cpu->Reg[Rd] = cpu->Reg[Rd] & 0xffffff00;
             switch((cpu->Reg[Rn] + Opr) % 4){
                 case 0:
-                    cpu->Reg[Rd] |= MemRead8(cpu, cpu->Reg[Rn] + Opr) & 0xff;
+                    cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rn] + Opr) & 0xff;
                     break;
                 case 1:
-                    cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
+                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
                     break;
                 case 2:
-                    cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
+                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
                     break;
                 case 3:
-                    cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
+                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
                     break;
             }
         }
@@ -357,20 +386,22 @@ void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
         //MemWrite(cpu, cpu->Reg[Rn] + Opr, 0xaaaaaaaa);
         if(SH == 2)cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;
         else{cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;}
+        //printf("instruction:%08x\n", inst);
+        //printf("mode:%d, SH:%d, addr:%08x\n", (cpu->Reg[Rn] + Opr) % 4, SH, cpu->Reg[Rn] + Opr);
         switch((cpu->Reg[Rn] + Opr) % 4){
             case 0:
-                if(SH==2)cpu->Reg[Rd] |= MemRead8(cpu, cpu->Reg[Rn] + Opr) & 0xff;
-                else{cpu->Reg[Rd] |= MemRead16(cpu, cpu->Reg[Rn] + Opr) & 0xffff;}
+                if(SH==2)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rn] + Opr);
+                else{cpu->Reg[Rd] = MemRead16(cpu, cpu->Reg[Rn] + Opr);}
                 break;
             case 1:
-                if(SH==2)cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
                 break;
             case 2:
-                if(SH==2)cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
-                else{cpu->Reg[Rd] |= (MemRead16(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xffff;}
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
+                else{cpu->Reg[Rd] = (MemRead16(cpu, cpu->Reg[Rn] + Opr));}
                 break;
             case 3:
-                if(SH==2)cpu->Reg[Rd] |= (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
                 break;
         }
         if(SH == 2)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 24)) >> 24);
@@ -397,15 +428,12 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
     uint16_t RegList = inst & 0xffff;
     uint8_t shift = 0;
     uint32_t RWaddr = cpu->Reg[Rn];
-    //MemWrite(cpu, cpu->Reg[Rn], 0xdddddddd);
-    //MemWrite(cpu, cpu->Reg[Rn] - 0x4, 0xaaaaaaaa);
-    //MemWrite(cpu, cpu->Reg[Rn] - 0x8, 0xbbbbbbbb);
-    //MemWrite(cpu, cpu->Reg[Rn] - 0xc, 0xcccccccc);
-    //printf("done\n");
+    //printf("BDT\n");
     if(L_bit){
         //LDM
         while(shift < 16){
             if(U_bit){
+                //printf("U-bit\n");
                 if((RegList >> shift) & 0x1){
                     if(P_bit)RWaddr += 4;
                     if(W_bit)cpu->Reg[Rn] = RWaddr;
@@ -418,7 +446,6 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
                 if((RegList >> (15 - shift)) & 0x1){
                     if(P_bit)RWaddr -= 4;
                     if(W_bit)cpu->Reg[Rn] = RWaddr;
-                    printf("addr %08x\n", RWaddr);
                     cpu->Reg[15 - shift] = MemRead32(cpu, RWaddr);
                     if(!P_bit)RWaddr -= 4;
                 }
@@ -435,7 +462,7 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
                     if(P_bit)RWaddr += 4;
                     if(W_bit)cpu->Reg[Rn] = RWaddr;
                     MemWrite32(cpu, RWaddr, cpu->Reg[shift]);
-                    printf("addr:%08x, data:%08x\n", RWaddr, MemRead32(cpu, RWaddr));
+                    //printf("addr:%08x, data:%08x\n", RWaddr, MemRead32(cpu, RWaddr));
                     if(!P_bit)RWaddr += 4;
                 }
             }
@@ -445,11 +472,12 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
                     if(W_bit)cpu->Reg[Rn] = RWaddr;
                     //printf("addr %08x, R%d\n", RWaddr, 15 - shift);
                     MemWrite32(cpu, RWaddr, cpu->Reg[15 - shift]);
-                    printf("data:%08x\n", MemRead32(cpu, RWaddr));
+                    //printf("data:%08x\n", MemRead32(cpu, RWaddr));
                     if(!P_bit)RWaddr -= 4;
                 }
             }
             shift+=1;
         }
+        //printf("R0:%08x, R1:%08x, data:%08x\n", cpu->Reg[R0], cpu->Reg[R1], MemRead32(cpu, cpu->Reg[R1]));
     }
 }
