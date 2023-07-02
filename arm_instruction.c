@@ -62,6 +62,7 @@ void ArmPSRT(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rm = (inst & 0xf);
     uint32_t Opr = (inst & 0xfff);
     uint32_t res;
+    //printf("Cycle:%d, PSRT\n", cpu->cycle);
     if(bit){
         //MSR
         if(b_only){
@@ -76,9 +77,13 @@ void ArmPSRT(Gba_Cpu *cpu, uint32_t inst){
     }
     else{
         //MRS
-        if(psr)cpu->Reg[Rd] = cpu->SPSR;
-        else{cpu->Reg[Rd] = cpu->CPSR;}
+        if(psr){cpu->Reg[Rd] = cpu->SPSR;}
+        else{
+            cpu->Reg[Rd] = cpu->CPSR;
+            
+        }
     }
+    //ChkCPUMode(cpu);
 }
 
 void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
@@ -90,92 +95,97 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
     uint8_t S_bit = (inst >> 20) & 0x1;
     //printf("instruction:%08x\n", inst);
     exOpr = BarrelShifter(cpu, Opr2, (inst >> 25) & 0x1, exOpr);
-    if(1){
-        switch(Opcode){
-            case AND://logical
-                cpu->Reg[Rd] = cpu->Reg[Rn] & exOpr;
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case EOR://logical
-                cpu->Reg[Rd] = cpu->Reg[Rn] ^ exOpr;
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case SUB://arith
-                cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
-                if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case RSB://arith
-                cpu->Reg[Rd] = exOpr - cpu->Reg[Rn];
-                if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], exOpr, cpu->Reg[Rn]);
-                break;
-            case ADD://arith
-                cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr;
-                if(S_bit)CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case ADC://arith
-                cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr + ((cpu->CPSR >> 29) & 0x1);
-                if(S_bit)CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1), exOpr);
-                break;
-            case SBC://arith
-                cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr + ((cpu->CPSR >> 29) & 0x1) - 1;
-                if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], cpu->Reg[Rn] - !((cpu->CPSR >> 29) & 0x1), exOpr);
-                break;
-            case RSC://arith
-                cpu->Reg[Rd] = exOpr - cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1) - 1;
-                if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], exOpr - !((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rn]);
-                break;
-            case TST://logical
+    //printf("cpu->CPSR:%08x\n", cpu->CPSR);
+    switch(Opcode){
+        case AND://logical
+            cpu->Reg[Rd] = cpu->Reg[Rn] & exOpr;
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case EOR://logical
+            cpu->Reg[Rd] = cpu->Reg[Rn] ^ exOpr;
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case SUB://arith
+            cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
+            if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case RSB://arith
+            cpu->Reg[Rd] = exOpr - cpu->Reg[Rn];
+            if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], exOpr, cpu->Reg[Rn]);
+            break;
+        case ADD://arith
+            cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr;
+            if(S_bit)CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case ADC://arith
+            cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr + ((cpu->CPSR >> 29) & 0x1);
+            if(S_bit)CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1), exOpr);
+            break;
+        case SBC://arith
+            cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr + ((cpu->CPSR >> 29) & 0x1) - 1;
+            if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], cpu->Reg[Rn] - !((cpu->CPSR >> 29) & 0x1), exOpr);
+            break;
+        case RSC://arith
+            cpu->Reg[Rd] = exOpr - cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1) - 1;
+            if(S_bit)CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], exOpr - !((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rn]);
+            break;
+        case TST://logical
                 //AND
-                if(!S_bit)ArmPSRT(cpu,inst);
-                else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
-                break;
-            case TEQ://logical
+            if(!S_bit)ArmPSRT(cpu,inst);
+            else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
+            break;
+        case TEQ://logical
                 //EOR
-                if(!S_bit)ArmPSRT(cpu,inst);
-                else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
-                break;
-            case CMP://arith
+            if(!S_bit)ArmPSRT(cpu,inst);
+            else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
+            break;
+        case CMP://arith
                 //SUB
-                if(!S_bit)ArmPSRT(cpu,inst);
-                else{
-                    //printf("cmp\n");
-                    CPSRUpdate(cpu, A_SUB, cpu->Reg[Rn] - exOpr, cpu->Reg[Rn], exOpr);
-                }
-                //printf("CSPR:%08x\n", cpu->CPSR);
-                break;
-            case CMN://arith
-                //ADD
-                if(!S_bit)ArmPSRT(cpu,inst);
-                else{CPSRUpdate(cpu, A_ADD, cpu->Reg[Rn] + exOpr, cpu->Reg[Rn], exOpr);};
-                break;
-            case ORR://logical
-                cpu->Reg[Rd] = cpu->Reg[Rn] | exOpr;
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case MOV://logical
-                //printf("exOpr:%08x\n", exOpr);
-                cpu->Reg[Rd] = exOpr;
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case BIC://logical
-                cpu->Reg[Rd] = cpu->Reg[Rn] & ~(exOpr);
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-            case MVN://logical
-                cpu->Reg[Rd] = ~(exOpr);
-                if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-                break;
-        }
+            if(!S_bit)ArmPSRT(cpu,inst);
+            else{
+                //printf("cmp\n");
+                CPSRUpdate(cpu, A_SUB, cpu->Reg[Rn] - exOpr, cpu->Reg[Rn], exOpr);
+            }
+            //printf("CSPR:%08x\n", cpu->CPSR);
+            break;
+        case CMN://arith
+            //ADD
+            if(!S_bit)ArmPSRT(cpu,inst);
+            else{CPSRUpdate(cpu, A_ADD, cpu->Reg[Rn] + exOpr, cpu->Reg[Rn], exOpr);};
+            break;
+        case ORR://logical
+            cpu->Reg[Rd] = cpu->Reg[Rn] | exOpr;
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case MOV://logical
+            //printf("Cycle:%d, MOV exOpr:%08x\n", cpu->cycle, exOpr);
+            cpu->Reg[Rd] = exOpr;
+            //printf("cpu->CPSR:%08x,Rd:%d\n", cpu->CPSR, Rd);
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            //printf("cpu->CPSR:%08x,Rd:%d\n", cpu->CPSR, Rd);
+            break;
+        case BIC://logical
+            cpu->Reg[Rd] = cpu->Reg[Rn] & ~(exOpr);
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
+        case MVN://logical
+            cpu->Reg[Rd] = ~(exOpr);
+            if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            break;
     }
+    //printf("cpu->CPSR:%08x\n", cpu->CPSR);
 }
 //OK
 void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
     uint32_t offset;
     if((inst >> 23) & 0x1)offset = (inst << 2) | 0xff000000;
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
+
     if((inst >> 24) & 0x1){//Link Bit
         cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
+        cpu->cycle += 3;
     }
+    else{cpu->cycle += 1;}
     //printf("old PC : %08x\n", cpu->Reg[PC]);
     cpu->Reg[PC] = cpu->Reg[PC] + (int32_t)offset;
     //printf("PC : %08x\n", cpu->Reg[PC]);
@@ -183,6 +193,7 @@ void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
     cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC] + 0x4);
     cpu->Ptr = cpu->Reg[PC];
     cpu->Ptr += 0x4;
+    cpu->Reg[PC] = cpu->Ptr;
 }
 
 void ArmBX(Gba_Cpu *cpu, uint32_t inst){
@@ -190,14 +201,13 @@ void ArmBX(Gba_Cpu *cpu, uint32_t inst){
     //if(Rn == PC)Undefined(cpu);//Exception
     //cpu->Reg[PC] = cpu->Reg[Rn];
     cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
-    //printf("Rn:%08x\n", cpu->Reg[Rn]);
     if(cpu->Reg[Rn] & 0x1 == 0x1){
         //printf("BX Thumb\n");
         cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
         cpu->Ptr = cpu->Reg[PC];
         cpu->Ptr += 0x2;
-        printf("After BX Ptr:%08x\n", cpu->Ptr);
+        //printf("After BX Ptr:%08x\n", cpu->Ptr);
         cpu->dMode = THUMB_MODE;
     }
     else{
@@ -315,13 +325,14 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     uint8_t L_bit = (inst >> 20) & 0x1;
     uint8_t Rn = (inst >> 16) & 0xf;
     uint8_t Rd = (inst >> 12) & 0xf;
-    uint8_t Offset = (inst) & 0xfff;
+    uint16_t Offset = (inst) & 0xfff;
     uint32_t Opr;
     //printf("Offset : %d, Imm:%d\n", Offset, Imm);
     if(Imm)Opr = cpu->Reg[(Offset & 0xf)];
     else{Opr = Offset;}
     if(!U_bit)Opr = 0 - Opr;
     if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
+    //printf("SDT Opr:%08x\n", Opr);
     if(L_bit){
         //LDR
         if(B_bit){
@@ -348,9 +359,11 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
                 //exit();
             }
             else{
+                //printf("LDR Rn:%d, Rn Content:%08x, Opr:%08x\n", Rn, cpu->Reg[Rn], Opr);
                 cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Rn] + Opr) ;
             }
         }
+        cpu->cycle += 3;
     }
     else{
         //STR
@@ -361,6 +374,7 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
         else{
             MemWrite32(cpu, cpu->Reg[Rn] + Opr, cpu->Reg[Rd]);
         }
+        cpu->cycle += 2;
     }
     if(!P_bit)cpu->Reg[Rn] += Opr;
 }
@@ -406,6 +420,7 @@ void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
         }
         if(SH == 2)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 24)) >> 24);
         else if(SH == 3)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 16)) >> 16);
+        cpu->cycle += 3;
     }
     else{
         //STR
@@ -414,6 +429,7 @@ void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
             MemWrite16(cpu, cpu->Reg[Rn] + Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
             //printf("Rd:%08x, addr:%08x, value:%08x\n", cpu->Reg[Rd], cpu->Reg[Rn] + Opr, MemRead(cpu, cpu->Reg[Rn] + Opr));
         }
+        cpu->cycle += 2;
     }
     if(!P_bit)cpu->Reg[Rn] += Opr;
 }

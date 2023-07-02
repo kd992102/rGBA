@@ -55,10 +55,15 @@ typedef struct arm7tdmi{
 
     uint32_t CPSR;
     uint32_t SPSR;
+
+    uint32_t Regbk[8];
+
     uint32_t Ptr;//Current execute instruction
     uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];
+    uint32_t cycle;
+
     Gba_Memory *GbaMem;
 } Gba_Cpu;
 
@@ -76,11 +81,5 @@ void ProcModeChg(Gba_Cpu *cpu);
 
 //Exeception
 void Reset(Gba_Cpu *cpu);
-void FIQ_handler(Gba_Cpu *cpu);
-void IRQ_handler(Gba_Cpu *cpu);
-void DataAbort(Gba_Cpu *cpu);
-void PreFetchAbort(Gba_Cpu *cpu);
-void Undefined(Gba_Cpu *cpu);
-void ExceptionHandler(Gba_Cpu *cpu);
 uint8_t CheckCond(Gba_Cpu *cpu);
 void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);

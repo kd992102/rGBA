@@ -107,7 +107,8 @@ void Reset(Gba_Cpu *cpu){
     cpu->Reg_svc[2] = cpu->Reg[PC];//R14 of supervisor mode
     cpu->SPSR_svc = cpu->CPSR;//backup CPSR
     cpu->CPSR = cpu->CPSR & 0xffffff00;//clear the I、F、T and mode bit
-    cpu->CPSR = cpu->CPSR | 0xd3;//set I、F, clear T
+    cpu->CPSR = cpu->CPSR | 0x5F;//set I、F, clear T
+    cpu->Reg[SP] = 0x3007F00;
     //
 }
 
@@ -158,6 +159,7 @@ void ProcModeChg(Gba_Cpu *cpu){
 
 void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB){
     uint8_t NZCV = 0x0;
+    //printf("CPSRUpdate:%08x\n", cpu->CPSR);
     if((result >> 31))NZCV |= 0x8;//N flag
 
     if(!result)NZCV |= 0x4;//Z flag
@@ -177,6 +179,7 @@ void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t paramete
         //V
         if((((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
     }
+    //printf("CPSRUpdate:%08x\n", cpu->CPSR);
     cpu->CPSR &= 0xfffffff;
     cpu->CPSR |= (NZCV << 28);
     //printf("NZCV:%08x\n", NZCV);
