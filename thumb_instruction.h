@@ -2,7 +2,7 @@ void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst);
 void ThumbCondB(Gba_Cpu *cpu, uint16_t inst);
 void ThumbSWI(Gba_Cpu *cpu, uint16_t inst);
 void ThumbUCOND(Gba_Cpu *cpu, uint16_t inst);
-void ThumbLONGBL(Gba_Cpu *cpu, uint16_t inst1, uint16_t inst2);
+void ThumbLONGBL(Gba_Cpu *cpu, uint16_t inst);
 void ThumbLSH(Gba_Cpu *cpu, uint16_t inst);
 void ThumbSPLS(Gba_Cpu *cpu, uint16_t inst);
 void ThumbLADDR(Gba_Cpu *cpu, uint16_t inst);
