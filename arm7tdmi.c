@@ -12,10 +12,10 @@ void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr){
     //change to Supervisor mode
     Reset(cpu);
     
-    cpu->Reg[PC] = BaseAddr + 0x4;
-    cpu->fetchcache[2] = 0x0;
-    cpu->fetchcache[1] = 0x0;
-    cpu->fetchcache[0] = MemRead32(cpu, BaseAddr);
+    cpu->Reg[PC] = BaseAddr + 0x8;
+    cpu->fetchcache[2] = MemRead32(cpu, BaseAddr);
+    cpu->fetchcache[1] = MemRead32(cpu, BaseAddr + 0x4);
+    cpu->fetchcache[0] = MemRead32(cpu, BaseAddr + 0x8);
 }
 
 uint8_t CheckCond(Gba_Cpu *cpu){
@@ -75,31 +75,39 @@ uint8_t CheckCond(Gba_Cpu *cpu){
 
 uint32_t MemRead32(Gba_Cpu *cpu, uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
+    if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     return *((uint32_t *)RelocAddr);
 }
 
 uint16_t MemRead16(Gba_Cpu *cpu, uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     return *((uint16_t *)RelocAddr);
 }
 
 uint8_t MemRead8(Gba_Cpu *cpu, uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     return *((uint8_t *)RelocAddr);
 }
 
 void MemWrite32(Gba_Cpu *cpu, uint32_t addr, uint32_t data){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
+    if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     *((uint32_t *)RelocAddr) = data;
 }
 
 void MemWrite16(Gba_Cpu *cpu, uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     *((uint16_t *)RelocAddr) = data;
 }
 
 void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data){
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
+    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     *((uint8_t *)RelocAddr) = data;
 }
 
@@ -107,8 +115,9 @@ void Reset(Gba_Cpu *cpu){
     cpu->Reg_svc[2] = cpu->Reg[PC];//R14 of supervisor mode
     cpu->SPSR_svc = cpu->CPSR;//backup CPSR
     cpu->CPSR = cpu->CPSR & 0xffffff00;//clear the I、F、T and mode bit
-    cpu->CPSR = cpu->CPSR | 0x5F;//set I、F, clear T
+    cpu->CPSR = cpu->CPSR | 0x1F;//set I、F, clear T
     cpu->Reg[SP] = 0x3007F00;
+    MemWrite16(cpu, 0x4000088, 0x200);
     //
 }
 
@@ -158,26 +167,31 @@ void ProcModeChg(Gba_Cpu *cpu){
 }
 
 void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB){
-    uint8_t NZCV = 0x0;
-    //printf("CPSRUpdate:%08x\n", cpu->CPSR);
+    uint8_t NZCV = (cpu->CPSR >> 28) & 0xf;
     if((result >> 31))NZCV |= 0x8;//N flag
+    else{NZCV &= 0x7;}
 
     if(!result)NZCV |= 0x4;//Z flag
+    else{NZCV &= 0xb;}
 
     if(Opcode == LOG){
         if(cpu->carry_out)NZCV |= 0x2;
+        else{NZCV &= 0xd;}
     }
     else if(Opcode == A_ADD){
         if(result < parameterA)NZCV |= 0x2;
-
+        else{NZCV &= 0xd;}
         //V
         if(!(((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
+        else{NZCV &= 0xe;}
     }
     else if(Opcode == A_SUB){
         //printf("A:%08x, B:%08x\n", parameterA, parameterB);
         if(parameterA >= parameterB)NZCV |= 0x2;
+        else{NZCV &= 0xd;}
         //V
         if((((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
+        else{NZCV &= 0xe;}
     }
     //printf("CPSRUpdate:%08x\n", cpu->CPSR);
     cpu->CPSR &= 0xfffffff;
