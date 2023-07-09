@@ -66,39 +66,28 @@ int main(int argc, char *argv[]){
         return 1;
     }*/
     
-    cpu->Ptr = 0x00000000;//ROM File ptr
-    InitCpu(cpu, cpu->Ptr);
+    cpu->Reg[PC] = 0x00000000;//ROM File Reg[PC]
+    InitCpu(cpu, cpu->Reg[PC]);
     //Program Counter = fetch instruction
     cpu->cycle = 0;
     uint8_t Cmode = 0x1F;
     for(;;){
-        //printf("--------Current Instruction--------\n");
-        //printf("[fetch]:%08x, instruction:%08x\n", cpu->Ptr, cpu->fetchcache[0]);
-        //printf("[decode]:%08x, instruction:%08x\n", cpu->Ptr - cpu->InstOffset, cpu->fetchcache[1]);
-        //printf("[execute]:%08x, instruction:%08x\n", cpu->Ptr - (cpu->InstOffset * 2), cpu->fetchcache[2]);
-        //Execute
-        //printf("LR:%08x\n", cpu->Reg[LR]);
         Cmode = ChkCPUMode(cpu);
-        //printf("Cmode:%x\n", cpu->CpuMode);
+
         CpuExecute(cpu, cpu->fetchcache[2]);
-        //printf("[--execute--]\n");
+
         if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
         else{cpu->InstOffset = 0x4;}
 
-        cpu->Ptr += cpu->InstOffset;//0x4
         RecoverReg(cpu, Cmode);
-        if(cpu->cycle == 858){
-            printf("Cycle:%d\n", cpu->cycle);
-            CpuStatus(cpu);
-            //printf("MemADDR:%08x\n", MemRead32(cpu, 0x27C));
-            //if(cpu->cycle == 852)break;
-            break;
-        }
-
-        cpu->Reg[PC] = cpu->Ptr;
-        PreFetch(cpu, cpu->Ptr);//fetch new instruction
+        cpu->Reg[PC] += cpu->InstOffset;
+        PreFetch(cpu, cpu->Reg[PC]);//fetch new instruction
         
-        //getchar();
+        if(cpu->cycle >= 515021){
+            CpuStatus(cpu);
+            printf("Cycle:%d\n", cpu->cycle);
+            getchar();
+        }
     }
 
 
@@ -206,8 +195,8 @@ void ArmSetTest(){
         cpu->fetchcache[2] = blx[i];
         //printf("fetch:%08x\tdecode:%08x\texecute:%08x\n", cpu->fetchcache[0], cpu->fetchcache[1], cpu->fetchcache[2]);
         CpuExecute(cpu, cpu->fetchcache[2]);
-        cpu->Ptr += cpu->InstOffset;
-        PreFetch(cpu, cpu->Ptr);
+        cpu->Reg[PC] += cpu->InstOffset;
+        PreFetch(cpu, cpu->Reg[PC]);
         if(i == 0){
             if(cpu->Reg[PC] != 0x6C){
                 printf("PC:%08x, LR:%08x\n", cpu->Reg[PC], cpu->Reg[LR]);

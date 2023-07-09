@@ -8,7 +8,6 @@ void RecoverReg(Gba_Cpu *cpu, uint8_t Cmode){
     switch(Cmode){
         case 0x11:
             //FIQ
-            printf("FIQ\n");
             cpu->Reg_fiq[0] = cpu->Reg[R8];
             cpu->Reg_fiq[1] = cpu->Reg[R9];
             cpu->Reg_fiq[2] = cpu->Reg[R10];
@@ -29,7 +28,6 @@ void RecoverReg(Gba_Cpu *cpu, uint8_t Cmode){
             break;
         case 0x12:
             //IRQ
-            printf("IRQ\n");
             cpu->Reg_irq[0] = cpu->Reg[SP];
             cpu->Reg_irq[1] = cpu->Reg[LR];
             cpu->SPSR_irq = cpu->SPSR;
@@ -40,7 +38,6 @@ void RecoverReg(Gba_Cpu *cpu, uint8_t Cmode){
             break;
         case 0x13:
             //Supervisor
-            printf("SVC\n");
             cpu->Reg_svc[0] = cpu->Reg[SP];
             cpu->Reg_svc[1] = cpu->Reg[LR];
             cpu->SPSR_svc = cpu->SPSR;
@@ -51,7 +48,6 @@ void RecoverReg(Gba_Cpu *cpu, uint8_t Cmode){
             break;
         case 0x17:
             //ABT
-            printf("ABT\n");
             cpu->Reg_abt[0] = cpu->Reg[SP];
             cpu->Reg_abt[1] = cpu->Reg[LR];
             cpu->SPSR_abt = cpu->SPSR;
@@ -62,7 +58,6 @@ void RecoverReg(Gba_Cpu *cpu, uint8_t Cmode){
             break;
         case 0x1B:
             //UDF
-            printf("UDF\n");
             cpu->Reg_und[0] = cpu->Reg[SP];
             cpu->Reg_und[1] = cpu->Reg[LR];
             cpu->SPSR_und = cpu->SPSR;
@@ -162,28 +157,23 @@ void ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
                 //printf("arm classification\n");
                 if(((inst >> 4) & 0xffffff) == 0x12fff1){
                     ArmBX(cpu, inst);
-                    cpu->cycle += 3;
                 }
                 else{
                     if(((inst >> 22) & 0xf) == 0 && ((inst >> 4) & 0xf) == 9){
                         ArmMUL(cpu, inst);
-                        cpu->cycle += 1;
                     }
                     else if(((inst >> 23) & 0x7) == 0x2 && ((inst >> 20) & 0x3) == 0x0 && ((inst >> 4) & 0xff) == 0x9){
                         ArmSWP(cpu, inst);
-                        cpu->cycle += 1;
                     }
                     else if(((inst >> 23) & 0x7) == 0x1 && ((inst >> 4) & 0xf) == 0x9){
                         ArmMULL(cpu, inst);
-                        cpu->cycle += 1;
                     }
-                    else if(((inst >> 4) & 0xf) > 0x9 && ((inst >> 4) & 0xf) <= 0xf && ((inst >> 25) & 0x7) == 0){
+                    else if(((inst >> 4) & 0xf) % 2 == 1 && ((inst >> 4) & 0xf) != 0x9 && ((inst >> 25) & 0x7) == 0){
                         ArmSDTS(cpu, inst);
                     }
                     else{
+                        //printf("cycle %d DataProc\n", cpu->cycle);
                         ArmDataProc(cpu, inst);
-                        cpu->cycle += 1;
-                        //printf("cpu->Cycle:%d, cpu->CPSR:%08x\n", cpu->cycle, cpu->CPSR);
                     }
                 }
                 break;
@@ -196,48 +186,45 @@ void ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
                 }
                 else{
                     ArmBDT(cpu, inst);
-                    cpu->cycle += 1;
                 }
                 break;
             case 3:
                 ArmSWI(cpu, inst);
-                cpu->cycle += 1;
                 break;
         }
     }
     else{
-        cpu->cycle += 1;
     }
 }
 
 void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
     //printf("Thumb Decode:%08x\n", inst);
-    switch((inst >> 13) & 0x7){
+    switch(((inst >> 13) & 0x7)){
         case 0:
-            if((inst >> 11) & 0x3 == 0x3)ThumbAS(cpu, inst);
-            else{ThumbMVREG(cpu, inst);}
-            cpu->cycle += 1;
+            if(((inst >> 11) & 0x3) == 0x3){
+                ThumbAS(cpu, inst);
+            }
+            else{
+                ThumbMVREG(cpu, inst);
+            }
             break;
         case 1:
             ThumbIMM(cpu, inst);
-            cpu->cycle += 1;
             break;
         case 2:
             if((inst >> 12) & 0x1){
-                if((inst >> 9) & 0x1)ThumbLSBH(cpu, inst);
+                if(((inst >> 9) & 0x1))ThumbLSBH(cpu, inst);
                 else{ThumbLSREG(cpu, inst);}
             }
             else{
-                if((inst >> 11) & 0x1){
+                if(((inst >> 11) & 0x1)){
                     //printf("PC-relative Load\n");
                     ThumbPCLOAD(cpu, inst);
-                    cpu->cycle += 3;
                 }
                 else{
-                    if((inst >> 10) & 0x1)ThumbBX(cpu, inst);
+                    if(((inst >> 10) & 0x1))ThumbBX(cpu, inst);
                     else{
                         ThumbALU(cpu, inst);
-                        cpu->cycle += 1;
                     }
                 }
             }
@@ -246,11 +233,11 @@ void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
             ThumbLSIMM(cpu, inst);
             break;
         case 4:
-            if((inst >> 12) & 0x1)ThumbLSH(cpu, inst);
-            else{ThumbSPLS(cpu, inst);}
+            if(((inst >> 12) & 0x1))ThumbSPLS(cpu, inst);
+            else{ThumbLSH(cpu, inst);}
             break;
         case 5:
-            if((inst >> 13) & 0x1){
+            if(((inst >> 12) & 0x1)){
                 //printf("inst : %08x\n", (inst >> 8));
                 if(((inst >> 8) & 0xf) == 0x0){
                     //printf("ADDSP\n");
@@ -264,7 +251,7 @@ void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
             break;
         case 6:
             //printf("case 6\n");
-            if((inst >> 12) & 0x1){
+            if(((inst >> 12) & 0x1)){
                 //printf("Hey inst:%08x\n", inst);
                 if(((inst >> 8) & 0xf) == 0xf)ThumbSWI(cpu, inst);
                 else{
@@ -277,8 +264,7 @@ void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
             }
             break;
         case 7:
-            if((inst >> 12) & 0x1){
-                printf("Long Branch\n");
+            if(((inst >> 12) & 0x1)){
                 ThumbLONGBL(cpu, inst);
             }
             else{
@@ -291,10 +277,9 @@ void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
 void PreFetch(Gba_Cpu *cpu, uint32_t Addr){
     cpu->fetchcache[2] = cpu->fetchcache[1];
     cpu->fetchcache[1] = cpu->fetchcache[0];
-    //printf("Stuck here!\n");
     if(cpu->dMode == ARM_MODE)cpu->fetchcache[0] = MemRead32(cpu, Addr);
     else{cpu->fetchcache[0] = MemRead16(cpu, Addr);}
-    //printf("End here!\n");
+    cpu->cycle += 1;
 }
 
 uint32_t CpuExecute(Gba_Cpu *cpu, uint32_t inst)
@@ -310,8 +295,6 @@ uint32_t CpuExecute(Gba_Cpu *cpu, uint32_t inst)
             ArmModeDecode(cpu, inst);
             return 0;
         case THUMB_MODE:
-            //printf("[ change into THUMB mode ]\n");
-            //printf("inst:%08x, data:%08x, inst1:%08x, data:%08x\n",cpu->fetchcache[0], (uint16_t)(inst & 0xffff), cpu->fetchcache[0], (uint16_t)((inst & 0xffff0000) >> 16));
             ThumbModeDecode(cpu, inst);
             return 0;
     }
@@ -322,7 +305,7 @@ void CpuStatus(Gba_Cpu *cpu){
     printf("--------register-------\n");
     for(int i=0;i<16;i++){
         printf("R[%02d]:%08x\t", i, cpu->Reg[i]);
-        if(i == 8)printf("\n");
+        if(i == 3 || i == 7 || i == 11)printf("\n");
     }
 
     printf("\n--------status-------\n");
@@ -355,7 +338,7 @@ void CpuStatus(Gba_Cpu *cpu){
     printf("N:%d,Z:%d,C:%d,V:%d\n", (cpu->CPSR >> 31) & 0x1, (cpu->CPSR >> 30) & 0x1, (cpu->CPSR >> 29) & 0x1, (cpu->CPSR >> 28) & 0x1);
 
     printf("--------piepeline-------\n");
-    printf("Next --> Addr:0x%08x, Instruction:%08x\n", cpu->Ptr - (cpu->InstOffset * 2), cpu->fetchcache[1]);
+    printf("Next --> Addr:0x%08x, Instruction:%08x\n", cpu->Reg[PC] - (cpu->InstOffset * 2), cpu->fetchcache[2]);
     printf("fetch:%08x\ndecode:%08x\nexecute:%08x\n", cpu->fetchcache[0], cpu->fetchcache[1], cpu->fetchcache[2]);
     printf("--------End-------\n");
 }

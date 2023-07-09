@@ -62,7 +62,7 @@ typedef struct arm7tdmi{
     uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];
-    uint32_t cycle;
+    uint64_t cycle;
 
     Gba_Memory *GbaMem;
 } Gba_Cpu;
