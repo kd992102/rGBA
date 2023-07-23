@@ -74,40 +74,57 @@ uint8_t CheckCond(Gba_Cpu *cpu){
 }
 
 uint32_t MemRead32(Gba_Cpu *cpu, uint32_t addr){
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint32_t *)RelocAddr);
 }
 
 uint16_t MemRead16(Gba_Cpu *cpu, uint32_t addr){
+    //addr &= 0xfffffffe;
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint16_t *)RelocAddr);
 }
 
 uint8_t MemRead8(Gba_Cpu *cpu, uint32_t addr){
+    //addr &= 0xfffffffe;
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint8_t *)RelocAddr);
 }
 
 void MemWrite32(Gba_Cpu *cpu, uint32_t addr, uint32_t data){
+    //addr &= 0xfffffffe;
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     *((uint32_t *)RelocAddr) = data;
 }
 
 void MemWrite16(Gba_Cpu *cpu, uint32_t addr, uint16_t data){
+    //addr &= 0xfffffffe;
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     *((uint16_t *)RelocAddr) = data;
 }
 
 void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data){
+    //addr &= 0xfffffffe;
+    //printf("Cycle %d\n", cpu->cycle);
     uint32_t RelocAddr = MemoryAddrReloc(cpu->GbaMem, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     *((uint8_t *)RelocAddr) = data;
 }
 
@@ -176,7 +193,9 @@ void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t paramete
 
     if(Opcode == LOG){
         if(cpu->carry_out)NZCV |= 0x2;
-        else{NZCV &= 0xd;}
+        else{
+            NZCV &= 0xd;
+        }
     }
     else if(Opcode == A_ADD){
         if(result < parameterA)NZCV |= 0x2;
@@ -193,8 +212,6 @@ void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t paramete
         if((((parameterA ^ parameterB) >> 31) & 0x1) && (((parameterA ^ result) >> 31) & 0x1))NZCV |= 0x1;
         else{NZCV &= 0xe;}
     }
-    //printf("CPSRUpdate:%08x\n", cpu->CPSR);
     cpu->CPSR &= 0xfffffff;
     cpu->CPSR |= (NZCV << 28);
-    //printf("NZCV:%08x\n", NZCV);
 }
