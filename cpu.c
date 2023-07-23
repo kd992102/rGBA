@@ -154,25 +154,19 @@ void ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
         //printf("Condition True\n");
         switch(((inst >> 26) & 0x3)){
             case 0:
-                //printf("arm classification\n");
                 if(((inst >> 4) & 0xffffff) == 0x12fff1){
                     ArmBX(cpu, inst);
                 }
                 else{
-                    if(((inst >> 22) & 0xf) == 0 && ((inst >> 4) & 0xf) == 9){
-                        ArmMUL(cpu, inst);
-                    }
-                    else if(((inst >> 23) & 0x7) == 0x2 && ((inst >> 20) & 0x3) == 0x0 && ((inst >> 4) & 0xff) == 0x9){
-                        ArmSWP(cpu, inst);
-                    }
-                    else if(((inst >> 23) & 0x7) == 0x1 && ((inst >> 4) & 0xf) == 0x9){
-                        ArmMULL(cpu, inst);
-                    }
-                    else if(((inst >> 4) & 0xf) % 2 == 1 && ((inst >> 4) & 0xf) != 0x9 && ((inst >> 25) & 0x7) == 0){
+                    if((((inst >> 4) & 0xf) == 0xb || ((inst >> 4) & 0xf) == 0xf || ((inst >> 4) & 0xf) == 0xd) && ((inst >> 25) & 0x1) == 0 && (((inst >> 24) & 0x1) >= ((inst >> 21) & 0x1))){
                         ArmSDTS(cpu, inst);
                     }
+                    else if(((inst >> 4) & 0xf) == 9){
+                        if(((inst >> 8) & 0xf) == 0 && ((inst >> 20) & 0x3) == 0 && ((inst >> 23) & 0x7) == 2)ArmSWP(cpu, inst);
+                        else if(((inst >> 23) & 0x7) == 1)ArmMULL(cpu, inst);
+                        else if(((inst >> 22) & 0xf) == 0)ArmMUL(cpu, inst);
+                    }
                     else{
-                        //printf("cycle %d DataProc\n", cpu->cycle);
                         ArmDataProc(cpu, inst);
                     }
                 }
@@ -198,7 +192,6 @@ void ArmModeDecode(Gba_Cpu *cpu, uint32_t inst){
 }
 
 void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
-    //printf("Thumb Decode:%08x\n", inst);
     switch(((inst >> 13) & 0x7)){
         case 0:
             if(((inst >> 11) & 0x3) == 0x3){
@@ -218,7 +211,6 @@ void ThumbModeDecode(Gba_Cpu *cpu, uint16_t inst){
             }
             else{
                 if(((inst >> 11) & 0x1)){
-                    //printf("PC-relative Load\n");
                     ThumbPCLOAD(cpu, inst);
                 }
                 else{

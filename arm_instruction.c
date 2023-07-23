@@ -14,7 +14,7 @@ uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result)
     else{
         shift_type = (Opr >> 5) & 0x3;
         if((Opr >> 4) & 0x1){
-            shift = cpu->Reg[(Opr >> 8) & 0xf] & 0xf;
+            shift = cpu->Reg[(Opr >> 8) & 0xf] & 0xff;
             if(!shift)cpu->carry_out = (cpu->CPSR >> 29) & 0x1;
             cpu->cycle += 1;//1I
         }
@@ -31,7 +31,13 @@ uint32_t BarrelShifter(Gba_Cpu *cpu, uint32_t Opr, uint8_t Imm, uint32_t result)
                 if(shift != 0)cpu->carry_out = (cpu->Reg[(Opr & 0xf)] >> (shift - 1)) & 0x1;
                 break;
             case ASR:
-                result = (uint32_t)((int32_t)(cpu->Reg[(Opr & 0xf)] >> shift));
+                if(shift == 0){
+                    result = (((int32_t)(cpu->Reg[(Opr & 0xf)] & 0x80000000)) >> 31);
+                    shift = 32;
+                }
+                else{
+                    result = (uint32_t)((int32_t)(cpu->Reg[(Opr & 0xf)] >> shift));
+                }
                 if(shift != 0)cpu->carry_out = (cpu->Reg[(Opr & 0xf)] >> (shift - 1)) & 0x1;
                 break;
             case ROR:
@@ -134,12 +140,24 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
         case TST://logical
                 //AND
             if(!S_bit)ArmPSRT(cpu,inst);
-            else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
+            //else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
+            if(((cpu->Reg[Rn] & exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
+            else{cpu->CPSR &= 0x7fffffff;}
+            if(!(cpu->Reg[Rn] & exOpr))cpu->CPSR |= 0x40000000;//Z flag
+            else{cpu->CPSR &= 0xbfffffff;}
+            if(cpu->carry_out)cpu->CPSR |= 0x20000000;
+            else{cpu->CPSR &= 0xffffffff;}
             break;
         case TEQ://logical
                 //EOR
             if(!S_bit)ArmPSRT(cpu,inst);
-            else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
+            //else{CPSRUpdate(cpu, LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
+            if(((cpu->Reg[Rn] ^ exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
+            else{cpu->CPSR &= 0x7fffffff;}
+            if(!(cpu->Reg[Rn] ^ exOpr))cpu->CPSR |= 0x40000000;//Z flag
+            else{cpu->CPSR &= 0xbfffffff;}
+            if(cpu->carry_out)cpu->CPSR |= 0x20000000;
+            else{cpu->CPSR &= 0xffffffff;}
             break;
         case CMP://arith
                 //SUB
@@ -161,7 +179,6 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
             if(Rd == PC)cpu->cycle += 2;
             break;
         case MOV://logical
-            //printf("MOV Rd %d exOpr %08x\n", Rd, exOpr);
             cpu->Reg[Rd] = exOpr;
             if(S_bit)CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC)cpu->cycle += 2;
@@ -177,8 +194,6 @@ void ArmDataProc(Gba_Cpu *cpu, uint32_t inst){
             if(Rd == PC)cpu->cycle += 2;
             break;
     }
-    //cpu->cycle += 1;//1S
-    //if(Rd == PC)cpu->cycle += 2;//1S+1N
 }
 //OK
 void ArmBranch(Gba_Cpu *cpu, uint32_t inst){
@@ -261,9 +276,9 @@ void ArmMUL(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rs = (inst >> 8) & 0xf;
     uint8_t Rm = inst & 0xf;
     uint8_t m = 0;
-    if((cpu->Reg[Rs] >> 8) & 0xffffff == 0x0 || (cpu->Reg[Rs] >> 8) & 0xffffff == 0xffffff)m = 1;
-    else if((cpu->Reg[Rs] >> 16) & 0xffff == 0x0 || (cpu->Reg[Rs] >> 16) & 0xffff == 0xffff)m = 2;
-    else if((cpu->Reg[Rs] >> 24) & 0xff == 0x0 || (cpu->Reg[Rs] >> 24) & 0xff == 0xff)m = 3;
+    if(((cpu->Reg[Rs] >> 8) & 0xffffff) == 0x0 || ((cpu->Reg[Rs] >> 8) & 0xffffff) == 0xffffff)m = 1;
+    else if(((cpu->Reg[Rs] >> 16) & 0xffff) == 0x0 || ((cpu->Reg[Rs] >> 16) & 0xffff) == 0xffff)m = 2;
+    else if(((cpu->Reg[Rs] >> 24)) & 0xff == 0x0 || ((cpu->Reg[Rs] >> 24) & 0xff) == 0xff)m = 3;
     else{m = 4;}
     cpu->carry_out = 0;
     if(Acc){
@@ -368,40 +383,51 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Rd = (inst >> 12) & 0xf;
     uint16_t Offset = (inst) & 0xfff;
     uint32_t Opr;
-    //printf("Offset : %d, Imm:%d\n", Offset, Imm);
-    if(Imm)Opr = cpu->Reg[(Offset & 0xf)];
-    else{Opr = Offset;}
-    if(!U_bit)Opr = 0 - Opr;
-    if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
-    //printf("SDT Opr:%08x\n", Opr);
+    uint8_t shift;
+    if(Imm){
+        shift = (Offset >> 7) & 0xf;
+        switch(((Offset >> 5) & 0x3)){
+            case LSL:
+                Offset = cpu->Reg[(Offset & 0xf)] << shift;
+                if(shift != 0)cpu->carry_out = (cpu->Reg[(Offset & 0xf)] >> (32 - shift)) & 0x1;
+                break;
+            case LSR:
+                Offset = cpu->Reg[(Offset & 0xf)] >> shift;
+                if(shift != 0)cpu->carry_out = (cpu->Reg[(Offset & 0xf)] >> (shift - 1)) & 0x1;
+                break;
+            case ASR:
+                Offset = (uint32_t)((int32_t)(cpu->Reg[(Offset & 0xf)] >> shift));
+                if(shift != 0)cpu->carry_out = (cpu->Reg[(Offset & 0xf)] >> (shift - 1)) & 0x1;
+                break;
+            case ROR:
+                if(shift == 0){
+                    cpu->carry_out = cpu->Reg[(Offset & 0xf)] & 0x1;
+                    Offset = (((cpu->CPSR >> 29) & 0x1) << 31) | (cpu->Reg[(Offset & 0xf)] >> 1);
+                }
+                else if(shift != 0){
+                    Offset = (cpu->Reg[(Offset & 0xf)] >> shift) | (cpu->Reg[(Offset & 0xf)] >> (32 - shift));
+                    cpu->carry_out = (cpu->Reg[(Offset & 0xf)] >> (shift - 1)) & 0x1;
+                }
+                break;
+        }
+    }
+    Opr = cpu->Reg[Rn];
+    if(P_bit){
+        if(U_bit)Opr += Offset;
+        else{Opr -= Offset;}
+    }
     if(L_bit){
         //LDR
         if(B_bit){
-            //printf("B-bit\n");
             cpu->Reg[Rd] = cpu->Reg[Rd] & 0xffffff00;
-            switch((cpu->Reg[Rn] + Opr) % 4){
-                case 0:
-                    cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rn] + Opr) & 0xff;
-                    break;
-                case 1:
-                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 8) & 0xff;
-                    break;
-                case 2:
-                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 16) & 0xff;
-                    break;
-                case 3:
-                    cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr) >> 24) & 0xff;
-                    break;
-            }
+            cpu->Reg[Rd] = MemRead8(cpu, Opr);
         }
         else{
-            if((cpu->Reg[Rn] + Opr) % 4){
-                printf("Address Must Be Multiply with 4!!!\n");
-                //exit();
+            if((Opr % 4)){
+                printf("Cycle %d Address Must Be Multiply with 4!!!\n", cpu->cycle);
             }
             else{
-                //printf("LDR Rn:%d, Rn Content:%08x, Opr:%08x\n", Rn, cpu->Reg[Rn], Opr);
-                cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Rn] + Opr);
+                cpu->Reg[Rd] = MemRead32(cpu, Opr);
             }
         }
         cpu->cycle += 2;//1S+1N+1I
@@ -409,22 +435,24 @@ void ArmSDT(Gba_Cpu *cpu, uint32_t inst){
     }
     else{
         //STR
-        //if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
         if(B_bit){
-            MemWrite8(cpu, cpu->Reg[Rn] + Opr, cpu->Reg[Rd] & 0xff | (cpu->Reg[Rd] & 0xff) << 8 | (cpu->Reg[Rd] & 0xff) << 16 | (cpu->Reg[Rd] & 0xff) << 24);
+            MemWrite8(cpu, Opr, (cpu->Reg[Rd] & 0xff) | ((cpu->Reg[Rd] & 0xff) << 8) | ((cpu->Reg[Rd] & 0xff) << 16) | ((cpu->Reg[Rd] & 0xff) << 24));
         }
         else{
-            MemWrite32(cpu, cpu->Reg[Rn] + Opr, cpu->Reg[Rd]);
+            MemWrite32(cpu, Opr, cpu->Reg[Rd]);
         }
         cpu->cycle += 1;//2N
     }
-    if(!P_bit)cpu->Reg[Rn] += Opr;
+    if(P_bit && W_bit)cpu->Reg[Rn] = Opr;
+    else if(P_bit == 0){
+        if(U_bit)cpu->Reg[Rn] += Offset;
+        else{cpu->Reg[Rn] -= Offset;}
+    }
 }
 void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
     uint8_t Imm = (inst >> 22) & 0x1;
     uint8_t P_bit = (inst >> 24) & 0x1;
     uint8_t U_bit = (inst >> 23) & 0x1;
-    //uint8_t B_bit = (inst >> 22) & 0x1;
     uint8_t W_bit = (inst >> 21) & 0x1;
     uint8_t L_bit = (inst >> 20) & 0x1;
     uint8_t Rn = (inst >> 16) & 0xf;
@@ -432,49 +460,52 @@ void ArmSDTS(Gba_Cpu *cpu, uint32_t inst){
     uint8_t SH = (inst >> 5) & 0x3;
     uint8_t Rm = inst & 0xf;
     uint32_t Opr;
-    //printf("Offset : %d, Imm:%d\n", Offset, Imm);
-    if(Imm){Opr = (((inst >> 8) & 0xf) << 4) | (inst & 0xf);}
-    else{Opr = cpu->Reg[Rm];}
-    if(!U_bit)Opr = 0 - Opr;
-    if(P_bit && W_bit)cpu->Reg[Rn] += Opr;
+    uint32_t Offset;
+    if(Imm){Offset = (((inst >> 8) & 0xf) << 4) | (inst & 0xf);}
+    else{Offset = cpu->Reg[Rm];}
+    Opr = cpu->Reg[Rn];
+    if(P_bit){
+        if(U_bit)Opr += Offset;
+        else{Opr -= Offset;}
+    }
     if(L_bit){
         //LDR
-        //MemWrite(cpu, cpu->Reg[Rn] + Opr, 0xaaaaaaaa);
         if(SH == 2)cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;
         else{cpu->Reg[Rd] = cpu->Reg[Rd] & 0x00000000;}
-        //printf("instruction:%08x\n", inst);
         //printf("mode:%d, SH:%d, addr:%08x\n", (cpu->Reg[Rn] + Opr) % 4, SH, cpu->Reg[Rn] + Opr);
-        switch((cpu->Reg[Rn] + Opr) % 4){
+        switch((Opr % 4)){
             case 0:
-                if(SH==2)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rn] + Opr);
-                else{cpu->Reg[Rd] = MemRead16(cpu, cpu->Reg[Rn] + Opr);}
+                if(SH==2)cpu->Reg[Rd] = MemRead8(cpu, Opr);
+                else{cpu->Reg[Rd] = MemRead16(cpu, Opr);}
                 break;
             case 1:
-                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, Opr));
                 break;
             case 2:
-                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
-                else{cpu->Reg[Rd] = (MemRead16(cpu, cpu->Reg[Rn] + Opr));}
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, Opr));
+                else{cpu->Reg[Rd] = (MemRead16(cpu, Opr));}
                 break;
             case 3:
-                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, cpu->Reg[Rn] + Opr));
+                if(SH==2)cpu->Reg[Rd] = (MemRead8(cpu, Opr));
                 break;
         }
         if(SH == 2)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 24)) >> 24);
-        else if(SH == 3)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 16)) >> 16);
+        else if(SH == 3){cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 16)) >> 16);}
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
         //STR
-        //printf("STRH\n");
         if(SH == 1){
-            MemWrite16(cpu, cpu->Reg[Rn] + Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
-            //printf("Rd:%08x, addr:%08x, value:%08x\n", cpu->Reg[Rd], cpu->Reg[Rn] + Opr, MemRead(cpu, cpu->Reg[Rn] + Opr));
+            MemWrite16(cpu, Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
         }
         cpu->cycle += 1;
     }
-    if(!P_bit)cpu->Reg[Rn] += Opr;
+    if(P_bit && W_bit)cpu->Reg[Rn] = Opr;
+    else if(P_bit == 0){
+        if(U_bit)cpu->Reg[Rn] += Offset;
+        else{cpu->Reg[Rn] -= Offset;}
+    }
 }
 void ArmUDF(Gba_Cpu *cpu, uint32_t inst){}
 void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
@@ -488,37 +519,34 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
     uint8_t shift = 0;
     uint32_t RWaddr = cpu->Reg[Rn];
     uint8_t n = 0;
-    //printf("BDT\n");
     if(L_bit){
         //LDM
-        while(shift < 16){
+        for(shift = 0;shift < 16;shift++){
             if(U_bit){
-                //printf("U-bit\n");
                 if((RegList >> shift) & 0x1){
                     if(P_bit)RWaddr += 4;
                     cpu->Reg[shift] = MemRead32(cpu, RWaddr);
                     if(!P_bit)RWaddr += 4;
                     n += 1;
+                    if(shift == 15)cpu->cycle += 2;
                 }
             }
             else{
-                //printf("in U=0, %d\n", 15-shift);
                 if((RegList >> (15 - shift)) & 0x1){
                     if(P_bit)RWaddr -= 4;
                     cpu->Reg[15 - shift] = MemRead32(cpu, RWaddr);
                     if(!P_bit)RWaddr -= 4;
                     n += 1;
+                    if(shift == 0)cpu->cycle += 2;
                 }
             }
-            shift+=1;
+            if(W_bit)cpu->Reg[Rn] = RWaddr;
         }
-        if(W_bit)cpu->Reg[Rn] = RWaddr;
         cpu->cycle += (n+1);
-        if(Rn == PC)cpu->cycle += 2;
     }
     else{
         //STM
-        while(shift < 16){
+        for(shift = 0;shift < 16;shift++){
             if(U_bit){
                 if((RegList >> shift) & 0x1){
                     if(P_bit)RWaddr += 4;
@@ -535,9 +563,8 @@ void ArmBDT(Gba_Cpu *cpu, uint32_t inst){
                     n += 1;
                 }
             }
-            shift+=1;
+            if(W_bit)cpu->Reg[Rn] = RWaddr;
         }
-        if(W_bit)cpu->Reg[Rn] = RWaddr;
         cpu->cycle += (n);
     }
 }

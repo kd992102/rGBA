@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 //#include "typedef.h"
 #include "arm7tdmi.h"
 #include "arm_instruction.h"
@@ -65,6 +66,13 @@ int main(int argc, char *argv[]){
         rom = NULL;
         return 1;
     }*/
+    uint16_t sample = 0x0;
+    for(uint32_t i=0; i < 0x2000000; i+=2){
+        MemWrite16(cpu, 0x8000000 + i, sample);
+        sample += 1;
+    }
+    memcpy(cpu->GbaMem->ExMem->Game_ROM2, cpu->GbaMem->ExMem->Game_ROM1, 0x2000000);
+    memcpy(cpu->GbaMem->ExMem->Game_ROM3, cpu->GbaMem->ExMem->Game_ROM1, 0x2000000);
     
     cpu->Reg[PC] = 0x00000000;//ROM File Reg[PC]
     InitCpu(cpu, cpu->Reg[PC]);
@@ -82,10 +90,15 @@ int main(int argc, char *argv[]){
         RecoverReg(cpu, Cmode);
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu, cpu->Reg[PC]);//fetch new instruction
-        
-        if(cpu->cycle >= 515021){
+        //516280 b 0x868 1382277 0x4000004 content d2
+        if(cpu->cycle >= 1382268){
             CpuStatus(cpu);
             printf("Cycle:%d\n", cpu->cycle);
+            uint32_t test = 0x4000000;
+            printf("%08x : %08x\n", test, MemRead32(cpu, test));
+            printf("%08x : %08x\n", test + 0x4, MemRead32(cpu, test + 0x4));
+            printf("%08x : %08x\n", test + 0x8, MemRead32(cpu, test + 0x8));
+            printf("%08x : %08x\n", test + 0xc, MemRead32(cpu, test + 0xc));
             getchar();
         }
     }

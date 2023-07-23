@@ -27,7 +27,9 @@
 #define VRAM_ADDR_BASE 0x6000000
 #define OAM_ADDR_BASE 0x7000000
 
-#define GAMEROM_ADDR_BASE 0x8000000
+#define GAMEROM1_ADDR_BASE 0x8000000
+#define GAMEROM2_ADDR_BASE 0xA000000
+#define GAMEROM3_ADDR_BASE 0xC000000
 #define GAMEROM_SDRAM_BASE 0xE000000
 
 typedef struct General_Internal_Memory{
@@ -45,10 +47,10 @@ typedef struct Display_Memory{
 } Dis_Memory;
 
 typedef struct External_Memory{
-    uint32_t *Game_ROM1;
-    uint32_t *Game_ROM2;
-    uint32_t *Game_ROM3;
-    uint32_t *Game_SRAM;
+    uint8_t *Game_ROM1;
+    uint8_t *Game_ROM2;
+    uint8_t *Game_ROM3;
+    uint8_t *Game_SRAM;
 } Ex_Memory;
 
 typedef struct Memory{
