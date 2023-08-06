@@ -1,5 +1,4 @@
-#include "memory.h"
-
+#include <stdint.h>
 #define A_ADD 1
 #define A_SUB 0
 #define LOG 2
@@ -17,13 +16,7 @@ enum ARM_MODE_REG{
 };
 
 enum CPU_MODE{
-    USER = 16,
-    FIQ = 17,
-    IRQ = 18,
-    SVC = 19,
-    ABT = 23,
-    UNDEF = 27, 
-    SYSTEM = 31
+    USER = 16,FIQ = 17,IRQ = 18,SVC = 19,ABT = 23,UNDEF = 27, SYSTEM = 31
 };
 
 typedef enum boolean{
@@ -58,28 +51,20 @@ typedef struct arm7tdmi{
 
     uint32_t Regbk[8];
 
-    uint32_t Ptr;//Current execute instruction
     uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];
     uint64_t cycle;
-
-    Gba_Memory *GbaMem;
 } Gba_Cpu;
 
-//uint32_t FileSize(FILE *ptr);
-void InitCpu(Gba_Cpu *cpu, uint32_t BaseAddr);
+uint8_t CheckCond();
+void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
 
-uint32_t MemRead32(Gba_Cpu *cpu, uint32_t addr);
-uint16_t MemRead16(Gba_Cpu *cpu, uint32_t addr);
-uint8_t MemRead8(Gba_Cpu *cpu, uint32_t addr);
-void MemWrite32(Gba_Cpu *cpu, uint32_t addr, uint32_t data);
-void MemWrite16(Gba_Cpu *cpu, uint32_t addr, uint16_t data);
-void MemWrite8(Gba_Cpu *cpu, uint32_t addr, uint8_t data);
 
-void ProcModeChg(Gba_Cpu *cpu);
-
-//Exeception
-void Reset(Gba_Cpu *cpu);
-uint8_t CheckCond(Gba_Cpu *cpu);
-void CPSRUpdate(Gba_Cpu *cpu, uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
+void RecoverReg(uint8_t Cmode);
+uint8_t ChkCPUMode();
+uint32_t CpuExecute(uint32_t inst);
+void CpuStatus();
+void PreFetch(uint32_t Addr);
+void ThumbModeDecode(uint16_t inst);
+void ArmModeDecode(uint32_t inst);

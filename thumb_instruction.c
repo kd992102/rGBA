@@ -1,8 +1,13 @@
-#include <stdint.h>
+#include <stdio.h>
+#include "memory.h"
+#include "io.h"
 #include "arm7tdmi.h"
 #include "thumb_instruction.h"
 
-void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst){
+extern Gba_Cpu *cpu;
+extern GbaMem *Mem;
+
+void ThumbMULLS(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t Rb = (inst >> 8) & 0x7;
     uint8_t RegList = (inst) & 0xff;
@@ -10,7 +15,7 @@ void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst){
     if(L_bit){
         for(int i=0;i<8;i++){
             if((RegList >> i) & 0x1){
-                cpu->Reg[i] = MemRead32(cpu, cpu->Reg[Rb]);
+                cpu->Reg[i] = MemRead32(cpu->Reg[Rb]);
                 cpu->Reg[Rb] = cpu->Reg[Rb] + 4;
                 n += 1;
             }
@@ -20,7 +25,7 @@ void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst){
     else{
         for(int i=0;i<8;i++){
             if((RegList >> i) & 0x1){
-                MemWrite32(cpu, cpu->Reg[Rb], cpu->Reg[i]);
+                MemWrite32(cpu->Reg[Rb], cpu->Reg[i]);
                 cpu->Reg[Rb] = cpu->Reg[Rb] + 4;
                 n += 1;
             }
@@ -28,20 +33,20 @@ void ThumbMULLS(Gba_Cpu *cpu, uint16_t inst){
         cpu->cycle += (n);
     }
 }
-void ThumbCondB(Gba_Cpu *cpu, uint16_t inst){
+void ThumbCondB(uint16_t inst){
     uint8_t cond = (inst >> 8) & 0xf;
     int8_t Offset = inst & 0xff;
     cpu->Cond = cond;
     if(CheckCond(cpu)){
         cpu->Reg[PC] = cpu->Reg[PC] + ((int8_t)Offset) * 2;
         if(((Offset >> 7) & 0x1) == 0x1){
-            cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-            cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
             cpu->Reg[PC] += 0x2;
         }
         else{
-            cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-            cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
             cpu->Reg[PC] += 0x2;
         }
         cpu->cycle += 2;
@@ -49,27 +54,27 @@ void ThumbCondB(Gba_Cpu *cpu, uint16_t inst){
     else{
     }
 }
-void ThumbSWI(Gba_Cpu *cpu, uint16_t inst){
+void ThumbSWI(uint16_t inst){
     uint8_t value = inst & 0xff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x2;
     cpu->Reg[PC] = 0x00000008;
     cpu->CpuMode = ARM_MODE;
     cpu->cycle += 2;
 }
-void ThumbUCOND(Gba_Cpu *cpu, uint16_t inst){
+void ThumbUCOND(uint16_t inst){
     uint32_t Offset = inst & 0x7ff;
     Offset = Offset << 1;
     if(((Offset >> 11) & 0x1))Offset = Offset | 0xfffff000;
     //printf("PC %08x, Offset %x\n", cpu->Reg[PC], Offset);
     cpu->Reg[PC] = cpu->Reg[PC] + Offset;
     //printf("Cycle %d, PC %08x\n", cpu->cycle, cpu->Reg[PC]);
-    cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-    cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+    cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+    cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
     cpu->Reg[PC] = cpu->Reg[PC];
     cpu->Reg[PC] += 0x2;
     cpu->cycle += 2;
 }
-void ThumbLONGBL(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLONGBL(uint16_t inst){
     uint8_t H = (inst >> 11) & 0x1;
     uint32_t Offset = ((inst) & 0x7ff);
     uint32_t tmp = 0;
@@ -88,14 +93,14 @@ void ThumbLONGBL(Gba_Cpu *cpu, uint16_t inst){
         cpu->Reg[PC] = cpu->Reg[LR] + (Offset);
         cpu->Reg[LR] = tmp | 0x1;
 
-        cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-        cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+        cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+        cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
         cpu->Reg[PC] = cpu->Reg[PC];
         cpu->Reg[PC] += 2;
         cpu->cycle += 2;
     }
 }
-void ThumbLSH(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLSH(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t Offset = (inst >> 6) & 0x1f;
     uint8_t Rb = (inst >> 3) & 0x7;
@@ -103,31 +108,31 @@ void ThumbLSH(Gba_Cpu *cpu, uint16_t inst){
     uint32_t addr = cpu->Reg[Rb] + (Offset << 1);
     if(L_bit){
         //LDR
-        cpu->Reg[Rd] = MemRead16(cpu, cpu->Reg[Rb] + (Offset << 1));
+        cpu->Reg[Rd] = MemRead16(cpu->Reg[Rb] + (Offset << 1));
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
-        MemWrite16(cpu, cpu->Reg[Rb] + (Offset << 1), cpu->Reg[Rd] & 0xffff);
+        MemWrite16(cpu->Reg[Rb] + (Offset << 1), cpu->Reg[Rd] & 0xffff);
         cpu->cycle += 1;
     }
 }
-void ThumbSPLS(Gba_Cpu *cpu, uint16_t inst){
+void ThumbSPLS(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t Rd = (inst >> 8) & 0x7;
     uint16_t Word = (inst) & 0xff;
     if(L_bit){
         //LDR
-        cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[SP] + (Word << 2));
+        cpu->Reg[Rd] = MemRead32(cpu->Reg[SP] + (Word << 2));
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
-        MemWrite32(cpu, cpu->Reg[SP] + (Word << 2), cpu->Reg[Rd]);
+        MemWrite32(cpu->Reg[SP] + (Word << 2), cpu->Reg[Rd]);
         cpu->cycle += 1;
     }
 }
-void ThumbLADDR(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLADDR(uint16_t inst){
     uint8_t SP_bit = (inst >> 11) & 0x1;
     uint8_t Rd = (inst >> 8) & 0x7;
     uint16_t Word = (inst) & 0xff;
@@ -141,7 +146,7 @@ void ThumbLADDR(Gba_Cpu *cpu, uint16_t inst){
     }
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbADDSP(Gba_Cpu *cpu, uint16_t inst){
+void ThumbADDSP(uint16_t inst){
     uint8_t S_bit = (inst >> 7) & 0x1;
     uint8_t Word = (inst) & 0x7f;
     //printf("Word:%08x\n", Word << 2);
@@ -155,7 +160,7 @@ void ThumbADDSP(Gba_Cpu *cpu, uint16_t inst){
         cpu->Reg[SP] = cpu->Reg[SP] + (Word << 2);
     }
 }
-void ThumbPPREG(Gba_Cpu *cpu, uint16_t inst){
+void ThumbPPREG(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t R_bit = (inst >> 8) & 0x1;
     uint8_t RegList = (inst) & 0xff;
@@ -164,16 +169,16 @@ void ThumbPPREG(Gba_Cpu *cpu, uint16_t inst){
         //POP
         for(int i=0;i<8;i++){
             if((RegList >> i) & 0x1){
-                cpu->Reg[i] = MemRead32(cpu, cpu->Reg[SP]);
+                cpu->Reg[i] = MemRead32(cpu->Reg[SP]);
                 cpu->Reg[SP] = cpu->Reg[SP] + 4;
                 n += 1;
             }
         }
         if(R_bit){
-            cpu->Reg[PC] = MemRead32(cpu, cpu->Reg[SP]) & 0xfffffffe;
+            cpu->Reg[PC] = MemRead32(cpu->Reg[SP]) & 0xfffffffe;
             cpu->Reg[SP] = cpu->Reg[SP] + 4;
-            cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-            cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
             cpu->Reg[PC] += 2;
             cpu->cycle += 3;
         }
@@ -183,19 +188,19 @@ void ThumbPPREG(Gba_Cpu *cpu, uint16_t inst){
         //PUSH
         if(R_bit){
                 cpu->Reg[SP] = cpu->Reg[SP] - 4;
-                MemWrite32(cpu, cpu->Reg[SP], cpu->Reg[LR]);
+                MemWrite32(cpu->Reg[SP], cpu->Reg[LR]);
         }
         for(int i=7;i>=0;i--){
             if((RegList >> i) & 0x1){
                 cpu->Reg[SP] = cpu->Reg[SP] - 4;
-                MemWrite32(cpu, cpu->Reg[SP], cpu->Reg[i]);
+                MemWrite32(cpu->Reg[SP], cpu->Reg[i]);
                 n += 1;
             }
         }
         cpu->cycle += (n + 1);
     }
 }
-void ThumbALU(Gba_Cpu *cpu, uint16_t inst){
+void ThumbALU(uint16_t inst){
     uint8_t Op = (inst >> 6) & 0xf;
     uint8_t Rs = (inst >> 3) & 0x7;
     uint8_t Rd = inst & 0x7;
@@ -206,68 +211,68 @@ void ThumbALU(Gba_Cpu *cpu, uint16_t inst){
         case 0:
             //AND
             cpu->Reg[Rd] = (cpu->Reg[Rd] & cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
         case 1:
             //EOR
             cpu->Reg[Rd] = (cpu->Reg[Rd] ^ cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
         case 2:
             //LOL
             cpu->Reg[Rd] = (cpu->Reg[Rd] << cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             cpu->cycle += 1;
             break;
         case 3:
             //LOR
             cpu->Reg[Rd] = (cpu->Reg[Rd] >> cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             cpu->cycle += 1;
             break;
         case 4:
             //ASR
             cpu->Reg[Rd] = ((int32_t)(cpu->Reg[Rd]) >> (cpu->Reg[Rs]));
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             cpu->cycle += 1;
             break;
         case 5:
             //ADC
             cpu->Reg[Rd] = (cpu->Reg[Rd]) + (cpu->Reg[Rs]) + ((cpu->CPSR >> 29) & 0x1);
-            CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], tmp + ((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rs]);
+            CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp + ((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rs]);
             break;
         case 6:
             //SBC
             cpu->Reg[Rd] = (cpu->Reg[Rd]) - (cpu->Reg[Rs]) - !((cpu->CPSR >> 29) & 0x1);
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], tmp - !((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rs]);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd], tmp - !((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rs]);
             break;
         case 7:
             //ROR
             cpu->Reg[Rd] = ((cpu->Reg[Rd]) << (32 - cpu->Reg[Rs])) | (cpu->Reg[Rd] >> cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, cpu->Reg[Rs]);
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, cpu->Reg[Rs]);
             cpu->cycle += 1;
             break;
         case 8:
             //TST
-            CPSRUpdate(cpu, LOG, (cpu->Reg[Rd] & cpu->Reg[Rs]), (cpu->Reg[Rd]), (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, (cpu->Reg[Rd] & cpu->Reg[Rs]), (cpu->Reg[Rd]), (cpu->Reg[Rs]));
             break;
         case 9:
             //NEG
             cpu->Reg[Rd] = (0 - (cpu->Reg[Rs]));
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
         case 10:
             //CMP
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd] - cpu->Reg[Rs], cpu->Reg[Rd], cpu->Reg[Rs]);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd] - cpu->Reg[Rs], cpu->Reg[Rd], cpu->Reg[Rs]);
             break;
         case 11:
             //CMN
-            CPSRUpdate(cpu, A_ADD, (cpu->Reg[Rd]) + (cpu->Reg[Rs]), (cpu->Reg[Rd]), (cpu->Reg[Rs]));
+            CPSRUpdate(A_ADD, (cpu->Reg[Rd]) + (cpu->Reg[Rs]), (cpu->Reg[Rd]), (cpu->Reg[Rs]));
             break;
         case 12:
             //ORR
             cpu->Reg[Rd] = (cpu->Reg[Rd] | cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
         case 13:
             //MUL
@@ -277,23 +282,23 @@ void ThumbALU(Gba_Cpu *cpu, uint16_t inst){
             else if(((tmp >> 24) & 0xff) == 0x0 || ((tmp >> 24) & 0xff) == 0xff)m = 3;
             else{m = 4;}
             cpu->Reg[Rd] = (cpu->Reg[Rd]) * (cpu->Reg[Rs]);
-            CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             cpu->cycle += m;
             break;
         case 14:
             //BIC
             cpu->Reg[Rd] = (cpu->Reg[Rd]) & ~(cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
         case 15:
             //MVN
             cpu->Reg[Rd] = ~(cpu->Reg[Rs]);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, (cpu->Reg[Rs]));
             break;
     }
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
+void ThumbBX(uint16_t inst){
     uint8_t Op = (inst >> 8) & 0x3;
     uint8_t H1 = (inst >> 7) & 0x1;
     uint8_t H2 = (inst >> 6) & 0x1;
@@ -306,7 +311,7 @@ void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
             cpu->Reg[Rd] += cpu->Reg[Rs];
             break;
         case 1:
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd] - cpu->Reg[Rs], cpu->Reg[Rd], cpu->Reg[Rs]);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd] - cpu->Reg[Rs], cpu->Reg[Rd], cpu->Reg[Rs]);
             break;
         case 2:
             cpu->Reg[Rd] = cpu->Reg[Rs];
@@ -317,8 +322,8 @@ void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
             if(cpu->Reg[PC] & 0x1){
                 cpu->Reg[PC] &= 0xfffffffe;
                 cpu->dMode = THUMB_MODE;
-                cpu->fetchcache[1] = MemRead16(cpu, cpu->Reg[PC]);
-                cpu->fetchcache[0] = MemRead16(cpu, cpu->Reg[PC] + 0x2);
+                cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+                cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
                 cpu->Reg[PC] = cpu->Reg[PC];
                 cpu->Reg[PC] += 0x2;
                 cpu->dMode = THUMB_MODE;
@@ -327,8 +332,8 @@ void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
             else{
                 cpu->Reg[PC] &= 0xfffffffe;
                 cpu->dMode = ARM_MODE;
-                cpu->fetchcache[1] = MemRead32(cpu, cpu->Reg[PC]);
-                cpu->fetchcache[0] = MemRead32(cpu, cpu->Reg[PC] + 0x4);
+                cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+                cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
                 cpu->Reg[PC] = cpu->Reg[PC];
                 cpu->Reg[PC] += 0x4;
                 cpu->dMode = ARM_MODE;
@@ -339,14 +344,14 @@ void ThumbBX(Gba_Cpu *cpu, uint16_t inst){
     }
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbPCLOAD(Gba_Cpu *cpu, uint16_t inst){
+void ThumbPCLOAD(uint16_t inst){
     uint8_t Rd = (inst >> 8) & 0x7;
     uint8_t Word = inst & 0xff;
-    cpu->Reg[Rd] = MemRead32(cpu, (cpu->Reg[PC] & 0xfffffffd) + (Word << 2));
+    cpu->Reg[Rd] = MemRead32((cpu->Reg[PC] & 0xfffffffd) + (Word << 2));
     cpu->cycle += 2;
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbLSREG(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLSREG(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t B_bit = (inst >> 10) & 0x1;
     uint8_t Ro = (inst >> 6) & 0x7;
@@ -354,40 +359,40 @@ void ThumbLSREG(Gba_Cpu *cpu, uint16_t inst){
     uint8_t Rd = (inst) & 0x7;
     if(L_bit){
         //LDR
-        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]);
-        else{cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]);}
+        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Ro] + cpu->Reg[Rb]);
+        else{cpu->Reg[Rd] = MemRead32(cpu->Reg[Ro] + cpu->Reg[Rb]);}
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
         //STR
-        if(B_bit)MemWrite8(cpu, cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd] & 0xff);
-        else{MemWrite32(cpu, cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd]);}
+        if(B_bit)MemWrite8(cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd] & 0xff);
+        else{MemWrite32(cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd]);}
         cpu->cycle += 1;
     }
 }
-void ThumbLSBH(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLSBH(uint16_t inst){
     uint8_t H_bit = (inst >> 11) & 0x1;
     uint8_t S_bit = (inst >> 10) & 0x1;
     uint8_t Ro = (inst >> 6) & 0x7;
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
     if(H_bit == 0 && S_bit == 0){
-        MemWrite16(cpu, cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd] & 0xffff);
+        MemWrite16(cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd] & 0xffff);
         cpu->cycle += 1;
     }
     else{
         //LDR
         if(H_bit){
-            if(S_bit)cpu->Reg[Rd] = (uint32_t)((((int32_t)MemRead16(cpu, cpu->Reg[Ro] + cpu->Reg[Rb])) << 16) >> 16);
-            else{cpu->Reg[Rd] = MemRead16(cpu, cpu->Reg[Ro] + cpu->Reg[Rb]);}
+            if(S_bit)cpu->Reg[Rd] = (uint32_t)((((int32_t)MemRead16(cpu->Reg[Ro] + cpu->Reg[Rb])) << 16) >> 16);
+            else{cpu->Reg[Rd] = MemRead16(cpu->Reg[Ro] + cpu->Reg[Rb]);}
         }
-        else{cpu->Reg[Rd] = (uint32_t)((((int32_t)MemRead8(cpu, cpu->Reg[Ro] + cpu->Reg[Rb])) << 24) >> 24);}
+        else{cpu->Reg[Rd] = (uint32_t)((((int32_t)MemRead8(cpu->Reg[Ro] + cpu->Reg[Rb])) << 24) >> 24);}
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
 }
-void ThumbLSIMM(Gba_Cpu *cpu, uint16_t inst){
+void ThumbLSIMM(uint16_t inst){
     uint8_t B_bit = (inst >> 12) & 0x1;
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t Offset = (inst >> 6) & 0x1f;
@@ -395,20 +400,20 @@ void ThumbLSIMM(Gba_Cpu *cpu, uint16_t inst){
     uint8_t Rd = (inst) & 0x7;
     if(L_bit){
         //LDR
-        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu, cpu->Reg[Rb] + Offset);
-        else{cpu->Reg[Rd] = MemRead32(cpu, cpu->Reg[Rb] + (Offset << 2));}
+        if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Rb] + Offset);
+        else{cpu->Reg[Rd] = MemRead32(cpu->Reg[Rb] + (Offset << 2));}
         cpu->cycle += 2;
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
-        if(B_bit)MemWrite8(cpu, cpu->Reg[Rb] + Offset, cpu->Reg[Rd]);
+        if(B_bit)MemWrite8(cpu->Reg[Rb] + Offset, cpu->Reg[Rd]);
         else{
-            MemWrite32(cpu, cpu->Reg[Rb] + (Offset << 2), cpu->Reg[Rd]);
+            MemWrite32(cpu->Reg[Rb] + (Offset << 2), cpu->Reg[Rd]);
         }
         cpu->cycle += 1;
     }
 }
-void ThumbAS(Gba_Cpu *cpu, uint16_t inst){
+void ThumbAS(uint16_t inst){
     uint8_t I_bit = (inst >> 10) & 0x1;
     uint8_t Op = (inst >> 9) & 0x1;
     uint8_t Rn = (inst >> 6) & 0x7;
@@ -420,25 +425,25 @@ void ThumbAS(Gba_Cpu *cpu, uint16_t inst){
     switch((Op << 1) | I_bit){
         case 0:
             cpu->Reg[Rd] = (cpu->Reg[Rs] + cpu->Reg[Rn]);
-            CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], tmp, cpu->Reg[Rn]);
+            CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, cpu->Reg[Rn]);
             break;
         case 1:
             //printf("cycle %d Here!\n", cpu->cycle);
             cpu->Reg[Rd] = cpu->Reg[Rs] + Rn;
-            CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], tmp, Rn);
+            CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, Rn);
             break;
         case 2:
             cpu->Reg[Rd] = cpu->Reg[Rs] - cpu->Reg[Rn];
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], tmp, cpu->Reg[Rn]);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd], tmp, cpu->Reg[Rn]);
             break;
         case 3:
             cpu->Reg[Rd] = cpu->Reg[Rs] - Rn;
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], tmp, Rn);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd], tmp, Rn);
             break;
     }
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbMVREG(Gba_Cpu *cpu, uint16_t inst){
+void ThumbMVREG(uint16_t inst){
     uint8_t Op = (inst >> 11) & 0x3;
     uint8_t Offset = (inst >> 6) & 0x1f;
     uint8_t Rs = (inst >> 3) & 0x7;
@@ -448,24 +453,24 @@ void ThumbMVREG(Gba_Cpu *cpu, uint16_t inst){
             //LSL
             if(Offset != 0)cpu->carry_out = (cpu->Reg[Rs] >> (32 - Offset)) & 0x1;
             cpu->Reg[Rd] = (cpu->Reg[Rs] << Offset);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
+            CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
             break;
         case 1:
             //LSR
             if(Offset != 0)cpu->carry_out = (cpu->Reg[Rs] >> (Offset - 1)) & 0x1;
             cpu->Reg[Rd] = (cpu->Reg[Rs] >> Offset);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
+            CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
             break;
         case 2:
             //ASR
             if(Offset != 0)cpu->carry_out = (cpu->Reg[Rs] >> (Offset - 1)) & 0x1;
             cpu->Reg[Rd] = (((int32_t)cpu->Reg[Rs]) >> Offset);
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
+            CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rs], Offset);
             break;
     }
     if(Rd == PC)cpu->cycle += 2;
 }
-void ThumbIMM(Gba_Cpu *cpu, uint16_t inst){
+void ThumbIMM(uint16_t inst){
     uint8_t Op = (inst >> 11) & 0x3;
     uint8_t Rd = (inst >> 8) & 0x7;
     uint8_t Offset = (inst) & 0xff;
@@ -474,20 +479,20 @@ void ThumbIMM(Gba_Cpu *cpu, uint16_t inst){
         case 0:
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] = Offset;
-            CPSRUpdate(cpu, LOG, cpu->Reg[Rd], tmp, Offset);
+            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, Offset);
             break;
         case 1:
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd] - Offset, cpu->Reg[Rd], Offset);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd] - Offset, cpu->Reg[Rd], Offset);
             break;
         case 2:
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] += Offset;
-            CPSRUpdate(cpu, A_ADD, cpu->Reg[Rd], tmp, Offset);
+            CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, Offset);
             break;
         case 3:
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] -= Offset;
-            CPSRUpdate(cpu, A_SUB, cpu->Reg[Rd], tmp, Offset);
+            CPSRUpdate(A_SUB, cpu->Reg[Rd], tmp, Offset);
             break;
     }
     if(Rd == PC)cpu->cycle += 2;
