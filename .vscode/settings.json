@@ -5,6 +5,13 @@
         "instructions.h": "c",
         "arm_decode.h": "c",
         "compare": "c",
-        "arm7tdmi.h": "c"
+        "arm7tdmi.h": "c",
+        "memory.h": "c",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "stdint.h": "c",
+        "io.h": "c",
+        "stdio.h": "c"
     }
 }
