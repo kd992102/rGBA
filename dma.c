@@ -5,7 +5,7 @@
 
 extern GbaMem *Mem;
 
-void DMA_CHANNEL_READ(DMA DMA_CH){
+DMA DMA_CHANNEL_READ(DMA DMA_CH){
     DMA_CH.DMAX[0].DMACNT = MemRead32(DMA0CNT);
     DMA_CH.DMAX[0].DMASAD = MemRead32(DMA0SAD);
     DMA_CH.DMAX[0].DMADAD = MemRead32(DMA0DAD);
@@ -18,6 +18,7 @@ void DMA_CHANNEL_READ(DMA DMA_CH){
     DMA_CH.DMAX[3].DMACNT = MemRead32(DMA3CNT);
     DMA_CH.DMAX[3].DMASAD = MemRead32(DMA3SAD);
     DMA_CH.DMAX[3].DMADAD = MemRead32(DMA3DAD);
+    return DMA_CH;
 }
 
 void DMA_Transfer(DMA DMA_CH, uint8_t TimeMode){
@@ -26,9 +27,24 @@ void DMA_Transfer(DMA DMA_CH, uint8_t TimeMode){
     uint8_t Reload = 0;
     uint32_t DstAddr;
     uint32_t SrcAddr;
-    DMA_CHANNEL_READ(DMA_CH);
-    for(int idx = 0;idx < 4;idx++){
-        if(!(DMA_CH.DMAX[idx].DMACNT & DMA_ENABLE) || (((DMA_CH.DMAX[idx].DMACNT >> 12) & 0x3) != TimeMode))continue;
+    uint8_t idx;
+    DMA_CH.DMAX[0].DMACNT = MemRead32(DMA0CNT);
+    DMA_CH.DMAX[0].DMASAD = MemRead32(DMA0SAD);
+    DMA_CH.DMAX[0].DMADAD = MemRead32(DMA0DAD);
+    DMA_CH.DMAX[1].DMACNT = MemRead32(DMA1CNT);
+    DMA_CH.DMAX[1].DMASAD = MemRead32(DMA1SAD);
+    DMA_CH.DMAX[1].DMADAD = MemRead32(DMA1DAD);
+    //if(DMA_CH.DMAX[1].DMACNT != 0)printf("CNT:%x, SAD:%x, DAD:%x\n", DMA_CH.DMAX[1].DMACNT, DMA_CH.DMAX[1].DMASAD, DMA_CH.DMAX[1].DMADAD);
+    DMA_CH.DMAX[2].DMACNT = MemRead32(DMA2CNT);
+    DMA_CH.DMAX[2].DMASAD = MemRead32(DMA2SAD);
+    DMA_CH.DMAX[2].DMADAD = MemRead32(DMA2DAD);
+    //if(DMA_CH.DMAX[2].DMACNT != 0)printf("CNT:%x, SAD:%x, DAD:%x\n", DMA_CH.DMAX[2].DMACNT, DMA_CH.DMAX[2].DMASAD, DMA_CH.DMAX[2].DMADAD);
+    DMA_CH.DMAX[3].DMACNT = MemRead32(DMA3CNT);
+    DMA_CH.DMAX[3].DMASAD = MemRead32(DMA3SAD);
+    DMA_CH.DMAX[3].DMADAD = MemRead32(DMA3DAD);
+    for(idx = 0;idx < 4;idx++){
+        if(!(DMA_CH.DMAX[idx].DMACNT & (DMA_ENABLE << 16)) || (((DMA_CH.DMAX[idx].DMACNT >> 12) & 0x3) != TimeMode))continue;
+        printf("DMA%d Transfer\n", idx);
         count = (DMA_CH.DMAX[idx].DMACNT & 0xffff);
         DstAddr = (DMA_CH.DMAX[idx].DMADAD);
         SrcAddr = (DMA_CH.DMAX[idx].DMASAD);

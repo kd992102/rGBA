@@ -230,7 +230,6 @@ void ArmBX(uint32_t inst){
         //printf("BX Thumb\n");
         cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
-        cpu->Reg[PC] = cpu->Reg[PC];
         cpu->Reg[PC] += 0x2;
         cpu->dMode = THUMB_MODE;
         cpu->CPSR |= 0x20;
@@ -238,7 +237,6 @@ void ArmBX(uint32_t inst){
     else{
         cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
-        cpu->Reg[PC] = cpu->Reg[PC];
         cpu->Reg[PC] += 0x4;
         cpu->dMode = ARM_MODE;
         cpu->CPSR &= 0xffffffdf;
@@ -376,7 +374,21 @@ void ArmMULL(uint32_t inst){
         cpu->cycle += (m+1);
     }
 }
-void ArmSWI(uint32_t inst){}
+void ArmSWI(uint32_t inst){
+    uint32_t swi_num = inst & 0xffffff;
+    cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
+    cpu->dMode = SVC;
+    ChkCPUMode();
+    //Initial SWI address
+    cpu->Reg[PC] = 0x08;
+    cpu->SPSR = cpu->CPSR;
+    //Entry address offset
+    cpu->Reg[PC] += swi_num;
+    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
+    cpu->Reg[PC] += 0x4;
+    cpu->cycle += 2;//2S+1N
+}
 void ArmSDT(uint32_t inst){
     uint8_t Imm = (inst >> 25) & 0x1;
     uint8_t P_bit = (inst >> 24) & 0x1;

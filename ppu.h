@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <SDL2/SDL.h>
 //LCD I/O BG Scrolling
-#define DICPCNT 0x4000000
+#define DISPCNT 0x4000000
 #define DISPSTAT 0x4000004
 #define VCOUNT 0x4000006
 #define BG0CNT 0x4000008
@@ -64,7 +64,9 @@
 #define BLDALPHA 0x4000052
 #define BLDY 0x4000054
 
+void DbgWindow();
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
-void DrawPixel(uint32_t cycle);
-void DrawScanLine(uint32_t cycle);
-void PPU_update(uint32_t cycle);
+void DrawLine(SDL_Renderer* renderer, SDL_Texture *texture, uint32_t v);
+void DrawPixel(SDL_Renderer* renderer, uint32_t h, uint32_t v);
+void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer);
+void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer);

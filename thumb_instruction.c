@@ -55,11 +55,20 @@ void ThumbCondB(uint16_t inst){
     }
 }
 void ThumbSWI(uint16_t inst){
-    uint8_t value = inst & 0xff;
+    uint32_t swi_num = inst & 0xff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x2;
-    cpu->Reg[PC] = 0x00000008;
     cpu->CpuMode = ARM_MODE;
-    cpu->cycle += 2;
+    cpu->dMode = SVC;
+    ChkCPUMode();
+    //Initial SWI address
+    cpu->Reg[PC] = 0x08;
+    cpu->SPSR = cpu->CPSR;
+    //Entry address offset
+    cpu->Reg[PC] += swi_num;
+    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
+    cpu->Reg[PC] += 0x4;
+    cpu->cycle += 2;//2S+1N
 }
 void ThumbUCOND(uint16_t inst){
     uint32_t Offset = inst & 0x7ff;
@@ -113,7 +122,7 @@ void ThumbLSH(uint16_t inst){
         if(Rd == PC)cpu->cycle += 2;
     }
     else{
-        MemWrite16(cpu->Reg[Rb] + (Offset << 1), cpu->Reg[Rd] & 0xffff);
+        MemWrite16(cpu->Reg[Rb] + (Offset << 1), (uint16_t)(cpu->Reg[Rd] & 0xffff));
         cpu->cycle += 1;
     }
 }
@@ -378,7 +387,7 @@ void ThumbLSBH(uint16_t inst){
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
     if(H_bit == 0 && S_bit == 0){
-        MemWrite16(cpu->Reg[Ro] + cpu->Reg[Rb], cpu->Reg[Rd] & 0xffff);
+        MemWrite16(cpu->Reg[Ro] + cpu->Reg[Rb], (uint16_t)(cpu->Reg[Rd] & 0xffff));
         cpu->cycle += 1;
     }
     else{
@@ -479,9 +488,11 @@ void ThumbIMM(uint16_t inst){
         case 0:
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] = Offset;
+            cpu->carry_out = 1;
             CPSRUpdate(LOG, cpu->Reg[Rd], tmp, Offset);
             break;
         case 1:
+            //if(cpu->cycle >= 1600300)printf("Thumb CMP Rd:%x Offset %x\n", cpu->Reg[Rd], Offset);
             CPSRUpdate(A_SUB, cpu->Reg[Rd] - Offset, cpu->Reg[Rd], Offset);
             break;
         case 2:
