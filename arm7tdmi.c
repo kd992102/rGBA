@@ -41,7 +41,7 @@ uint8_t CheckCond(){
             if(V == 0)return 1;
             return 0;
         case HI:
-            if(C == 1 && N == 0)return 1;
+            if(C == 1 && Z == 0)return 1;
             return 0;
         case LS:
             if(C == 0 || Z == 1)return 1;
@@ -87,7 +87,6 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
         else{NZCV &= 0xe;}
     }
     else if(Opcode == A_SUB){
-        //printf("A:%08x, B:%08x\n", parameterA, parameterB);
         if(parameterA >= parameterB)NZCV |= 0x2;
         else{NZCV &= 0xd;}
         //V

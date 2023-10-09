@@ -9,9 +9,9 @@
 #include "gba.h"
 #include "ppu.h"
 
-SDL_Renderer* renderer;
-SDL_Window* window;
-SDL_Texture* texture;
+static SDL_Renderer* renderer;
+static SDL_Window* window;
+static SDL_Texture* texture;
 
 //struct gba_rom *gba_rom;
 FILE *bios;
@@ -81,8 +81,16 @@ int main(int argc, char *argv[]){
     cpu->Reg[PC] = 0x00000000;//ROM File Reg[PC]
     InitCpu(cpu->Reg[PC]);
 
-    PPUInit(renderer, window, texture);
-
+    //PPUInit(renderer, window, texture);
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
+    }
+    if (SDL_CreateWindowAndRenderer(308, 228, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
+    }
+    SDL_SetRenderDrawColor(renderer, 0xaa, 0xbb, 0xcc, 0x00);
+    SDL_RenderClear(renderer);
+    
     cpu->cycle = 0;
     uint8_t Cmode = 0x1F;
     for(;;){
@@ -96,20 +104,23 @@ int main(int argc, char *argv[]){
         RecoverReg(Cmode);
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
-        PPU_update(cpu->cycle);
-        /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385*/
-        if(cpu->cycle >= 1417662){
+        PPU_update(cpu->cycle, texture, renderer);
+        /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
+        if(cpu->cycle >= 1397532){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle);
-            uint32_t test = 0x4000000;
-            printf("%08x : %08x\n", test, MemRead32(test));
-            printf("%08x : %08x\n", test + 0x4, MemRead32(test + 0x4));
-            printf("%08x : %08x\n", test + 0x8, MemRead32(test + 0x8));
-            printf("%08x : %08x\n", test + 0xc, MemRead32(test + 0xc));
+            printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
+            printf("BG %x:%x\n", 0x6000300, MemRead32(0x6000300));
+            printf("Sprite %x:%x\n", 0x7000048, MemRead32(0x7000048));
             getchar();
         }
     }
 
+    //Video Test Loop
+    /*for(;;){
+        PPU_update(cpu->cycle, texture, renderer);
+        cpu->cycle += 1;
+    }*/
 
     Release_GbaMem();
     free(cpu);

@@ -12,7 +12,7 @@
 #define DMA2CNT 0x40000D0
 #define DMA3CNT 0x40000DC
 
-#define DMA_ENABLE (1 << 31)
+#define DMA_ENABLE (1 << 15)
 #define DMA_INTERRUPT_ENABLE (1 << 30)
 #define DMA_TIMEING_IMMEDIATE 0
 #define DMA_TIMEING_VBLANK (1 << 27)
@@ -50,4 +50,4 @@ struct DMA_CHANNEL_ARRAY{
 typedef struct DMA_CHANNEL_ARRAY DMA;
 
 void DMA_Transfer(DMA DMA_CH, uint8_t TimeMode);
-void DMA_CHANNEL_READ(DMA DMA_CH);
+DMA DMA_CHANNEL_READ(DMA DMA_CH);
