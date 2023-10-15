@@ -87,7 +87,6 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
                 for(BGindex=3;BGindex >= 0;BGindex--){
                     if(!(enable_bg & (1 << BGindex))) continue;
                     if((BGControl[BGindex] & 0x3) != BGpriority) continue;
-                    printf("Draw Line\n");
                     uint32_t Chr_Base = ((BGControl[BGindex] >> 2) & 0x3) << 14;
                     uint8_t ColorDep = ((BGControl[BGindex] >> 7) & 0x1);
                     uint16_t Scrn_Base = ((BGControl[BGindex] >> 8) & 0x1f) << 11;
@@ -190,7 +189,7 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
     if(horizon == 0){
         if(vertical < VDRAW ){
             //printf("Line : %d\n", vertical);
-            DrawLine(renderer, texture, vertical);
+            DrawScanLine(vertical, texture, renderer);
             //delay(1);
         }
         MemWrite16(VCOUNT, vertical);

@@ -88,10 +88,11 @@ int main(int argc, char *argv[]){
     if (SDL_CreateWindowAndRenderer(308, 228, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
     }
-    SDL_SetRenderDrawColor(renderer, 0xaa, 0xbb, 0xcc, 0x00);
+    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
     SDL_RenderClear(renderer);
     
     cpu->cycle = 0;
+    cpu->cycle_sum = 0;
     uint8_t Cmode = 0x1F;
     for(;;){
         Cmode = ChkCPUMode();
@@ -104,14 +105,21 @@ int main(int argc, char *argv[]){
         RecoverReg(Cmode);
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
-        PPU_update(cpu->cycle, texture, renderer);
+        //cpu->cycle_sum += cpu->cycle;
+        for(int i=0;i<cpu->cycle;i++){
+            cpu->cycle_sum += 1;
+            if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
+        }
+        cpu->cycle = 0;
         /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
-        if(cpu->cycle >= 1397532){
+        if(cpu->cycle_sum >= 8000000){
             CpuStatus();
-            printf("Cycle:%d\n", cpu->cycle);
+            printf("Cycle:%d\n", cpu->cycle_sum);
+            printf("DISP:%x:%x\n", DISPCNT, MemRead16(DISPCNT));
             printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
             printf("BG %x:%x\n", 0x6000300, MemRead32(0x6000300));
-            printf("Sprite %x:%x\n", 0x7000048, MemRead32(0x7000048));
+            printf("OBJ %x:%x\n", 0x6011140, MemRead32(0x6011140));
+            printf("Sprite %x:%x\n", 0x7000000, MemRead32(0x7000000));
             getchar();
         }
     }
