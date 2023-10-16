@@ -105,8 +105,8 @@ int main(int argc, char *argv[]){
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
         PPU_update(cpu->cycle, texture, renderer);
-        /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
-        if(cpu->cycle >= 1397532){
+        /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1397532 1401107 1416598 1600385 1402122 1881269*/
+        if(cpu->cycle >= 2000000){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle);
             printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
