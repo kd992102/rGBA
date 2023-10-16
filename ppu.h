@@ -64,6 +64,15 @@
 #define BLDALPHA 0x4000052
 #define BLDY 0x4000054
 
+struct OAM {
+    uint16_t at0;
+    uint16_t at1;
+    uint16_t at2;
+    uint16_t at3;
+};
+
+typedef struct OAM OAM_attr;
+
 void DbgWindow();
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
 void DrawLine(SDL_Renderer* renderer, SDL_Texture *texture, uint32_t v);
