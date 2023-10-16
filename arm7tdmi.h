@@ -55,6 +55,7 @@ typedef struct arm7tdmi{
     uint8_t InstOffset;
     uint32_t fetchcache[3];
     uint64_t cycle;
+    uint64_t cycle_sum;
 } Gba_Cpu;
 
 uint8_t CheckCond();
