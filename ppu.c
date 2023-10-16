@@ -57,7 +57,6 @@ void delay(int milli_seconds)
 }
 
 void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer){
-
     uint32_t Display = MemRead16(DISPCNT);
     uint8_t VideoMode = (Display & 0x7);
     int8_t BGpriority, BGindex;
@@ -76,6 +75,7 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
     for(uint8_t i = 0;i < 4;i++){
         BGVofs[i] = MemRead16(BG0VOFS + 4*i);
     }
+    printf("DISPCNT:%x\n", MemRead32(DISPCNT));
     switch(VideoMode){
         //Tile/Map based Modes
         case 0:
@@ -84,10 +84,11 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
             uint8_t enable_bg = (Display >> 8) & bg_enable_mask[VideoMode];
             //if(VideoMode == 2)printf("Video Mode %d enable bg %08x\n", VideoMode, (Display >> 8));
             for(BGpriority=3;BGpriority >= 0;BGpriority--){
+                //printf("Drawing...\n");
                 for(BGindex=3;BGindex >= 0;BGindex--){
                     if(!(enable_bg & (1 << BGindex))) continue;
+                    printf("For Loop\n");
                     if((BGControl[BGindex] & 0x3) != BGpriority) continue;
-                    printf("Draw Line\n");
                     uint32_t Chr_Base = ((BGControl[BGindex] >> 2) & 0x3) << 14;
                     uint8_t ColorDep = ((BGControl[BGindex] >> 7) & 0x1);
                     uint16_t Scrn_Base = ((BGControl[BGindex] >> 8) & 0x1f) << 11;
@@ -149,7 +150,6 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
             }
             break;
     }
-
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -190,7 +190,7 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
     if(horizon == 0){
         if(vertical < VDRAW ){
             //printf("Line : %d\n", vertical);
-            DrawLine(renderer, texture, vertical);
+            DrawScanLine(vertical, texture, renderer);
             //delay(1);
         }
         MemWrite16(VCOUNT, vertical);
