@@ -38,9 +38,13 @@ void DrawLine(SDL_Renderer* renderer, SDL_Texture *texture, uint32_t v){
     SDL_RenderPresent(renderer);
 }
 
-void DrawPixel(SDL_Renderer* renderer, uint32_t h, uint32_t v){
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderDrawPoint(renderer, h, v);
+void DrawPixel(SDL_Renderer* renderer, uint8_t color, uint32_t x, uint32_t y){
+    uint8_t r,g,b;
+    r = (color >> 10) & 0x1f;
+    g = (color >> 5) & 0x1f;
+    b = (color & 0x1f);
+    SDL_SetRenderDrawColor(renderer, r, g, b, 0x00);
+    SDL_RenderDrawPoint(renderer, x, y);
     SDL_RenderPresent(renderer);
 }
 
@@ -68,28 +72,32 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
     uint16_t TileNum;
     uint32_t TileAddr;
     SDL_Rect Tile;
+    uint8_t ObjH, ObjV;
     Tile.h = 8;
     Tile.w = 8;
-    SDL_Rect OBJtile[1024];
+    SDL_Rect OBJtile;
     uint32_t Sprite[128];
     for(int h=0;h<308;h++){
         if(OBJenable){
-            for(uint32_t OAM_ADDR = OAM_ADDR_BASE;OAM_ADDR < (128*8);OAM_ADDR+=8){
+            //printf("OBJEnable\n");
+            for(uint32_t OAM_ADDR = OAM_ADDR_BASE;OAM_ADDR < (OAM_ADDR_BASE + (128*8));OAM_ADDR+=8){
+                //printf("PASS1\n");
                 OBJattr.at0 = MemRead16(OAM_ADDR);
                 OBJattr.at1 = MemRead16(OAM_ADDR+0x2);
                 OBJattr.at2 = MemRead16(OAM_ADDR+0x4);
                 OBJattr.at3 = MemRead16(OAM_ADDR+0x8);
-                if(!(OBJattr.at0 | OBJattr.at1 | OBJattr.at2 | OBJattr.at3))break;
+                if(OBJattr.at0 == 0 && OBJattr.at1 == 0 && OBJattr.at2 == 0 && OBJattr.at3 == 0)break;
                 RSFlag = (OBJattr.at0 >> 8) & 0x1;
                 Xcoord = OBJattr.at1 & 0xff;
                 Ycoord = OBJattr.at0 & 0xff;
-                TileNum = (OBJattr.at2 & 0x1ff);
+                TileNum = (OBJattr.at2 & 0x3ff);
                 Mosaic = (OBJattr.at0 >> 12) & 0x1;
                 Shape = (OBJattr.at0 >> 14) & 0x3;
                 Color = (OBJattr.at0 >> 13) & 0x1;
                 if(Color == 0)(OBJattr.at2 >> 12) & 0xf;
                 OBJSize = (OBJattr.at1 >> 14) & 0x3;
                 Priority = (OBJattr.at2 >> 12) & 0xf;
+                //printf("Pass\n");
                 if(RSFlag){
                     DoubleFlag = (OBJattr.at0 >> 9) & 0x1;
                     RSparam = (OBJattr.at1 >> 9) & 0x1f;
@@ -99,37 +107,115 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
                     HFlip = (OBJattr.at1 >> 12) & 0x1;
                     VFlip = (OBJattr.at1 >> 13) & 0x1;
                     if(Disable == 0 && vcount == Ycoord && h == Xcoord){
-                        TileAddr = 0x6010000 + ((OBJattr.at2 & 0x1ff) * 32);
+                        TileAddr = 0x6010000 + ((OBJattr.at2 & 0x3ff) * 32);
                         switch(Shape){
+                            case 0:
+                                switch(OBJSize){
+                                    case 0:
+                                        ObjH = 8;
+                                        ObjV = 8;
+                                        break;
+                                    case 1:
+                                        ObjH = 16;
+                                        ObjV = 16;
+                                        break;
+                                    case 2:
+                                        ObjH = 32;
+                                        ObjV = 32;
+                                        break;
+                                    case 3:
+                                        ObjH = 64;
+                                        ObjV = 64;
+                                        break;
+                                }
                             case 1:
                                 switch(OBJSize){
                                     case 0:
-                                        
+                                        ObjH = 16;
+                                        ObjV = 8;
+                                        break;
                                     case 1:
+                                        ObjH = 32;
+                                        ObjV = 8;
+                                        break;
                                     case 2:
+                                        ObjH = 32;
+                                        ObjV = 16;
+                                        break;
                                     case 3:
-                                }
+                                        ObjH = 64;
+                                        ObjV = 32;
+                                        break;
+                            }
                             case 2:
                                 switch(OBJSize){
                                     case 0:
+                                        ObjH = 8;
+                                        ObjV = 16;
+                                        break;
                                     case 1:
+                                        ObjH = 8;
+                                        ObjV = 32;
+                                        break;
                                     case 2:
+                                        ObjH = 16;
+                                        ObjV = 32;
+                                        break;
                                     case 3:
-                            }
-                            case 3:
-                                switch(OBJSize){
-                                    case 0:
-                                    case 1:
-                                    case 2:
-                                    case 3:
+                                        ObjH = 32;
+                                        ObjV = 64;
+                                        break;
                             }
                         }
+                        OBJtile.h = 8;
+                        OBJtile.w = 8;
+                        OBJtile.x = Xcoord;
+                        OBJtile.y = Ycoord;
+                        uint16_t array[64];//64 pixels = 1 tile
+                        for(int x=0;x<64;x++){
+                            for(int i=0;i<64;i++){
+                                array[i] = MemRead8(TileAddr + i);
+                               //printf("TileAddr : %x, array : %x\n", TileAddr + i, array[i]);
+                                switch(array[i]){
+                                    case 0:
+                                        array[i] = MemRead16(0x5000200);
+                                        break;
+                                    case 1:
+                                        array[i] = MemRead16(0x5000202);
+                                        break;
+                                    case 2:
+                                        array[i] = MemRead16(0x5000204);
+                                        break;
+                                    case 3:
+                                        array[i] = MemRead16(0x5000206);
+                                        break;
+                                    default:
+                                        array[i] = MemRead16(0x5000206);
+                                        break;
+                                }
+                            }
+                            //printf("TileAddr : %x, array : %x\n", TileAddr + 0x292, array[0x292]);
+                            SDL_Surface *Surf = SDL_CreateRGBSurfaceWithFormatFrom(array,8,8,16,2*8,SDL_PIXELFORMAT_BGR555);
+                            SDL_Texture *Tex = SDL_CreateTextureFromSurface(renderer, Surf);
+                            SDL_Rect Rect;
+                            SDL_RenderCopy(renderer, Tex, NULL, &OBJtile);
+                            SDL_RenderPresent(renderer);
+                            TileAddr = TileAddr + 64;
+                            if(x % 8 == 0)OBJtile.y = OBJtile.y + 1;
+                        }
+                        continue;
+                    }
+                    else if(Disable == 1){
+                        continue;
                     }
                 }
             }
         }
+        else{
+            break;
+        }
     }
-    void *scanline;
+    /*void *scanline;
     uint32_t Pitch = 240 * 4;
     SDL_LockTexture(texture, NULL, &scanline, &Pitch);
     for(uint8_t i = 0;i < 4;i++){
@@ -147,7 +233,7 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
         case 0:
         case 1:
         case 2:
-            /*uint8_t enable_bg = (Display >> 8) & bg_enable_mask[VideoMode];
+            uint8_t enable_bg = (Display >> 8) & bg_enable_mask[VideoMode];
             //if(VideoMode == 2)printf("Video Mode %d enable bg %08x\n", VideoMode, (Display >> 8));
             for(BGpriority=3;BGpriority >= 0;BGpriority--){
                 //printf("Drawing...\n");
@@ -213,9 +299,9 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
                         Addr += 4;
                     }
                 }
-            }*/
+            }
             break;
-    }
+    }*/
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -241,6 +327,8 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
 
     if(vertical >= VDRAW){
         reg_vblank = 1;
+        //SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
+        //SDL_RenderClear(renderer);
         DMA_Transfer(DMA_CH, 1);
     }
     else if(vertical == 0){reg_vblank = 0;}
