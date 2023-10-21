@@ -102,6 +102,7 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
             VFlip = (OBJattr.at1 >> 13) & 0x1;
             if(Disable == 0 && vcount == Ycoord && h == Xcoord){
                 TileAddr = 0x6010000 + ((OBJattr.at2 & 0x3ff) * 32);
+                //printf("TileAddr:%x\n", TileAddr);
                 switch(Shape){
                     case 0:
                         switch(OBJSize){
@@ -122,6 +123,7 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
                                 ObjV = 64;
                                 break;
                         }
+                        break;
                     case 1:
                         switch(OBJSize){
                             case 0:
@@ -140,7 +142,8 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
                                 ObjH = 64;
                                 ObjV = 32;
                                 break;
-                    }
+                        }
+                        break;
                     case 2:
                         switch(OBJSize){
                             case 0:
@@ -159,45 +162,32 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
                                 ObjH = 32;
                                 ObjV = 64;
                                 break;
-                    }
+                        }
+                        break;
                 }
                 OBJtile.h = 8;
                 OBJtile.w = 8;
                 OBJtile.x = Xcoord;
                 OBJtile.y = Ycoord;
                 uint16_t array[64];//64 pixels = 1 tile
-                for(int x=0;x<64;x++){
-                    for(int i=0;i<64;i++){
-                        array[i] = MemRead8(TileAddr + i);
-                        switch(array[i]){
-                            case 0:
-                                array[i] = MemRead16(0x5000200);
-                                break;
-                            case 1:
-                                array[i] = MemRead16(0x5000202);
-                                break;
-                            case 2:
-                                array[i] = MemRead16(0x5000204);
-                                break;
-                            case 3:
-                                array[i] = MemRead16(0x5000206);
-                                break;
-                            default:
-                                array[i] = MemRead16(0x5000206);
-                                break;
+                printf("H:%d,V:%d\n", ObjH, ObjV);
+                for(int spry=0;spry<(ObjV/8);spry+=1){
+                    OBJtile.y = Ycoord + (spry*8);
+                    OBJtile.x = Xcoord;
+                    for(int sprx=0;sprx<(ObjH/8);sprx+=1){
+                        OBJtile.x = Xcoord + (sprx*8);
+                        for(int i=0;i<64;i++){//a tile
+                            array[i] = MemRead8(TileAddr + 0x400*spry + 0x40*sprx + i);
+                            //printf("addr:%x->content:%x\n", TileAddr + 0x400*spry + 0x40*sprx + i, array[i]);
+                            //printf("addr:%x->content:%x\n", 0x6016c92, MemRead8(0x6016c92));
+                            array[i] = MemRead16(0x5000200+0x2*array[i]);
                         }
-                    }
-                    //printf("TileAddr : %x, array : %x\n", TileAddr + 0x292, array[0x292]);
-                    SDL_Surface *Surf = SDL_CreateRGBSurfaceWithFormatFrom(array,8,8,16,2*8,SDL_PIXELFORMAT_BGR555);
-                    SDL_Texture *Tex = SDL_CreateTextureFromSurface(renderer, Surf);
-                    SDL_Rect Rect;
-                    SDL_RenderCopy(renderer, Tex, NULL, &OBJtile);
-                    SDL_RenderPresent(renderer);
-                    TileAddr = TileAddr + 64;
-                    OBJtile.x += 8;
-                    if(x % 8 == 0){
-                        OBJtile.y = OBJtile.y + 8;
-                        OBJtile.x = Xcoord;
+                        //getchar();
+                        SDL_Surface *Surf = SDL_CreateRGBSurfaceWithFormatFrom(array,8,8,16,2*8,SDL_PIXELFORMAT_BGR555);
+                        SDL_Texture *Tex = SDL_CreateTextureFromSurface(renderer, Surf);
+                        SDL_Rect Rect;
+                        SDL_RenderCopy(renderer, Tex, NULL, &OBJtile);
+                        SDL_RenderPresent(renderer);
                     }
                 }
                 continue;
