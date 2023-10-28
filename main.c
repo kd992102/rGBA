@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
         }
         cpu->cycle = 0;
         /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
-        if(cpu->cycle_sum >= 1445560){
+        if(cpu->cycle_sum >= 8000000){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("DISP:%x:%x\n", DISPCNT, MemRead16(DISPCNT));
