@@ -453,7 +453,7 @@ void ArmSDT(uint32_t inst){
     else{
         //STR
         if(B_bit){
-            MemWrite8(Opr, (cpu->Reg[Rd] & 0xff) | ((cpu->Reg[Rd] & 0xff) << 8) | ((cpu->Reg[Rd] & 0xff) << 16) | ((cpu->Reg[Rd] & 0xff) << 24));
+            MemWrite32(Opr, (cpu->Reg[Rd] & 0xff) | ((cpu->Reg[Rd] & 0xff) << 8) | ((cpu->Reg[Rd] & 0xff) << 16) | ((cpu->Reg[Rd] & 0xff) << 24));
         }
         else{
             MemWrite32(Opr, cpu->Reg[Rd]);

@@ -73,10 +73,7 @@ struct OAM {
 
 typedef struct OAM OAM_attr;
 
-void DbgWindow();
 void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h);
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
-void DrawLine(SDL_Renderer* renderer, SDL_Texture *texture, uint32_t v);
-void DrawPixel(SDL_Renderer* renderer, uint8_t color, uint32_t h, uint32_t v);
 void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer);
 void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer);

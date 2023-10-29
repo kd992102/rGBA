@@ -14,10 +14,6 @@ uint16_t h = 0;
 uint8_t v = 0;
 uint8_t bg_enable_mask[3] = {0xf, 0x7, 0xc};
 
-void DbgWindow(){
-
-}
-
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture){
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
@@ -27,25 +23,6 @@ void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture){
     }
     //SDL_SetWindowResizable(window, SDL_TRUE);
     texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB1555,SDL_TEXTUREACCESS_STREAMING,8,8);
-}
-
-void DrawLine(SDL_Renderer* renderer, SDL_Texture *texture, uint32_t v){
-    SDL_SetRenderTarget(renderer, texture);
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderDrawLine(renderer, 0, v, 239, v);
-    SDL_SetRenderTarget(renderer, NULL);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
-    SDL_RenderPresent(renderer);
-}
-
-void DrawPixel(SDL_Renderer* renderer, uint8_t color, uint32_t x, uint32_t y){
-    uint8_t r,g,b;
-    r = (color >> 10) & 0x1f;
-    g = (color >> 5) & 0x1f;
-    b = (color & 0x1f);
-    SDL_SetRenderDrawColor(renderer, r, g, b, 0x00);
-    SDL_RenderDrawPoint(renderer, x, y);
-    SDL_RenderPresent(renderer);
 }
 
 void delay(int milli_seconds)
@@ -100,7 +77,7 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
         else{Disable = (OBJattr.at0 >> 9) & 0x1;}
         HFlip = (OBJattr.at1 >> 12) & 0x1;
         VFlip = (OBJattr.at1 >> 13) & 0x1;
-        if(Disable == 1 && RSFlag == 0)continue;
+        if(Disable == 1)continue;
         if(vcount == Ycoord && h == Xcoord){
             TileAddr = 0x6010000 + ((OBJattr.at2 & 0x3ff) * 32);
             //printf("TileAddr:%x\n", TileAddr);
@@ -171,7 +148,7 @@ void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h){
             OBJtile.x = Xcoord;
             OBJtile.y = Ycoord;
             uint16_t array[64];//64 pixels = 1 tile
-            printf("sprite id:%3d, H:%d,V:%d\n", ((OAM_ADDR - OAM_ADDR_BASE) / 8), ObjH, ObjV);
+            //printf("sprite id:%3d, H:%d,V:%d, addr:%x, sprite:%x\n", ((OAM_ADDR - OAM_ADDR_BASE) / 8), ObjH, ObjV, OAM_ADDR, MemRead32(OAM_ADDR));
             for(int spry=0;spry<(ObjV/8);spry+=1){
                 OBJtile.y = Ycoord + (spry*8);
                 OBJtile.x = Xcoord;
@@ -302,7 +279,7 @@ void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer)
 }
 
 void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
-    uint16_t reg_vcount = MemRead16(VCOUNT);
+    uint16_t reg_vcount = MemRead8(VCOUNT);
     uint16_t reg_status = MemRead16(DISPSTAT);
     uint8_t reg_hblank = 0;
     uint8_t reg_vblank = 0;
@@ -311,39 +288,37 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
     uint32_t horizon = 0;
     uint32_t vertical = 0;
     horizon = cycle % SCANLINE_CYCLE;
-    vertical = (cycle % (SCANLINE_CYCLE * 228)) / SCANLINE_CYCLE;
-
+    //vertical = (cycle % (SCANLINE_CYCLE * 228)) / SCANLINE_CYCLE;
+    //printf("cycle:%d, H:%d, V:%d\n",cycle ,(horizon/4) , reg_vcount);
     if(reg_vcount == disp_vcount){
         reg_vc_match = 1;
         //printf("v-count match, reg:%d, disp:%d\n", reg_vcount, disp_vcount);
     }
     else{reg_vc_match = 0;}
 
-    if(vertical >= VDRAW){
+    if(reg_vcount >= VDRAW && reg_vcount < 228){
         reg_vblank = 1;
-        //SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
-        //SDL_RenderClear(renderer);
-        DMA_Transfer(DMA_CH, 1);
+        //DMA_Transfer(DMA_CH, 1);
     }
-    else if(vertical == 0){reg_vblank = 0;}
+    else{reg_vblank = 0;}
 
-    if(horizon >= HBLANK_ZERO_CYCLE){
+    if(horizon > HBLANK_ZERO_CYCLE){
         reg_hblank = 1;
-        DMA_Transfer(DMA_CH, 2);
+        //DMA_Transfer(DMA_CH, 2);
     }
     else{
-        if(horizon == 0 && vertical < VDRAW)reg_hblank = 0;
+        reg_hblank = 0;
     }
-
     if(horizon == 0){
-        if(vertical < VDRAW ){
-            //printf("Line : %d\n", vertical);
-            DrawScanLine(vertical, texture, renderer);
+        if(reg_vcount < VDRAW ){
+            DrawScanLine(reg_vcount, texture, renderer);
             //delay(1);
         }
-        MemWrite16(VCOUNT, vertical);
+        reg_vcount += 1;
+        if(reg_vcount == 228)reg_vcount = 0;
+        PPUMemWrite16(VCOUNT, reg_vcount);
     }
 
-    reg_status = reg_status | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank);
-    MemWrite16(DISPSTAT, reg_status);
+    reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
+    PPUMemWrite16(DISPSTAT, reg_status);
 }

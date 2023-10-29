@@ -8,3 +8,4 @@ uint8_t MemRead8(uint32_t addr);
 void MemWrite32(uint32_t addr, uint32_t data);
 void MemWrite16(uint32_t addr, uint16_t data);
 void MemWrite8(uint32_t addr, uint8_t data);
+void PPUMemWrite16(uint32_t addr, uint16_t data);

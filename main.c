@@ -92,7 +92,7 @@ int main(int argc, char *argv[]){
     }
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
     SDL_RenderClear(renderer);
-    
+    PPUMemWrite16(VCOUNT, 0x7E);
     cpu->cycle = 0;
     cpu->cycle_sum = 0;
     uint8_t Cmode = 0x1F;
@@ -114,18 +114,20 @@ int main(int argc, char *argv[]){
             cpu->cycle_sum += 1;
             if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
         }
-        /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
-        if(cpu->cycle_sum >= 535376){
+        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107*/
+        if(cpu->cycle_sum >= 10000000){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", CurrentInst);
             printf("Instruction Cycle:%d\n", cpu->cycle);
+            printf("DISP:%x:%x\n", DISPSTAT, MemRead32(DISPSTAT));
             printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
             printf("BG %x:%x\n", 0x6000300, MemRead32(0x6000300));
             printf("OBJ %x:%x\n", 0x6016c92, MemRead32(0x6016c92));
-            printf("Sprite %x:%x\n", 0x7000000, MemRead32(0x7000000));
+            printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();
+            //exit(1);
         }
         cpu->cycle = 0;
     }
