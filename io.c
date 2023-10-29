@@ -37,6 +37,7 @@ uint32_t MemoryAddrReloc(uint32_t addr){
             if(addr >= (OAM_ADDR_BASE + OAM_MEM_SIZE))return (uint32_t)(Mem->OAM) + (uint32_t)(((addr - OAM_ADDR_BASE) % OAM_MEM_SIZE));
             break;
         case GAMEROM1_ADDR_BASE:
+            //printf("GAME ROM %x\n", addr);
             if((addr ^ GAMEROM1_ADDR_BASE) < 0x9000000)return (uint32_t)((Mem->Game_ROM1) + (addr - GAMEROM1_ADDR_BASE));
             break;
         case 0x9000000:
@@ -67,7 +68,10 @@ uint32_t MemRead32(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
-    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
+    if(addr >= 0x8000000 && addr <= 0xDFFFFFF){
+        cpu->cycle += 4;
+        //printf("ROM addr %x\n", RelocAddr);
+    }
     return *((uint32_t *)RelocAddr);
 }
 

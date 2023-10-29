@@ -53,13 +53,13 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    /*rom = fopen(rom_file_name, "rb");
+    rom = fopen(rom_file_name, "rb");
     fseek(rom, 0, SEEK_END);
     rom_size = ftell(rom);
     printf("Rom File size : %u bytes\n", rom_size);
     fseek(rom, 0, SEEK_SET);
 
-    if(fread(cpu->GbaMem->ExMem->Game_ROM1, sizeof(uint8_t), rom_size, rom)){
+    if(fread(Mem->Game_ROM1, sizeof(uint8_t), rom_size, rom)){
         puts("ROM read success");
         fclose(rom);
         rom = NULL;
@@ -69,12 +69,14 @@ int main(int argc, char *argv[]){
         fclose(rom);
         rom = NULL;
         return 1;
-    }*/
+    }
+    printf("--->%x\n", Mem->Game_ROM1[0]);
     uint16_t sample = 0x0;
-    for(uint32_t i=0; i < 0x2000000; i+=2){
+    /*for(uint32_t i=0; i < 0x2000000; i+=2){
         MemWrite16(0x8000000 + i, sample);
         sample += 1;
-    }
+    }*/
+    //memcpy(Mem->Game_ROM1, rom, 0x2000000);
     memcpy(Mem->Game_ROM2, Mem->Game_ROM1, 0x2000000);
     memcpy(Mem->Game_ROM3, Mem->Game_ROM1, 0x2000000);
     
@@ -94,9 +96,10 @@ int main(int argc, char *argv[]){
     cpu->cycle = 0;
     cpu->cycle_sum = 0;
     uint8_t Cmode = 0x1F;
+    uint32_t CurrentInst;
     for(;;){
         Cmode = ChkCPUMode();
-
+        CurrentInst = cpu->fetchcache[2];
         CpuExecute(cpu->fetchcache[2]);
 
         if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
@@ -106,22 +109,25 @@ int main(int argc, char *argv[]){
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
         //cpu->cycle_sum += cpu->cycle;
+        //cpu->cycle+=1;
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
             if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
         }
-        cpu->cycle = 0;
         /*516280 b 0x868 1382277 0x4000004 content d2 1363820 1390712 1401107 1416598 1600385 1402122 1881269*/
-        if(cpu->cycle_sum >= 8000000){
+        if(cpu->cycle_sum >= 535376){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
-            printf("DISP:%x:%x\n", DISPCNT, MemRead16(DISPCNT));
+            printf("Current Instruction:%x\n", CurrentInst);
+            printf("Instruction Cycle:%d\n", cpu->cycle);
             printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
             printf("BG %x:%x\n", 0x6000300, MemRead32(0x6000300));
             printf("OBJ %x:%x\n", 0x6016c92, MemRead32(0x6016c92));
             printf("Sprite %x:%x\n", 0x7000000, MemRead32(0x7000000));
+            printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();
         }
+        cpu->cycle = 0;
     }
 
     //Video Test Loop
