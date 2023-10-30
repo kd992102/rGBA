@@ -17,7 +17,7 @@ uint32_t MemoryAddrReloc(uint32_t addr){
             break;
         case WRAMC_ADDR_BASE:
             if((addr ^ WRAMC_ADDR_BASE) < WRAM_CHIP_MEM_SIZE)return (uint32_t)(Mem->WRAM_chip) + (uint32_t)(addr - WRAMC_ADDR_BASE);
-            if(addr >= (WRAMC_ADDR_BASE + WRAM_CHIP_MEM_SIZE))return (uint32_t)(Mem->WRAM_chip) + (uint32_t)(((addr - WRAMC_ADDR_BASE) % WRAM_CHIP_MEM_SIZE));
+            if(addr >= (WRAMC_ADDR_BASE + WRAM_CHIP_MEM_SIZE))return (uint32_t)(Mem->WRAM_chip) + (uint32_t)((addr - WRAMC_ADDR_BASE) % WRAM_CHIP_MEM_SIZE);
             break;
         case IOREG_ADDR_BASE:
             if((addr ^ IOREG_ADDR_BASE) < IO_REG_MEM_SIZE)return (uint32_t)(Mem->IO_Reg) + (uint32_t)(addr - IOREG_ADDR_BASE);
@@ -66,6 +66,7 @@ uint32_t MemoryAddrReloc(uint32_t addr){
 
 uint32_t MemRead32(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
+    //if(addr >= 0x3000000 && addr < 0x4000000)printf("32 cycle:%llu, %x\n", cpu->cycle_sum, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF){
@@ -77,6 +78,7 @@ uint32_t MemRead32(uint32_t addr){
 
 uint16_t MemRead16(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
+    //if(addr >= 0x3000000 && addr < 0x4000000)printf("16 cycle:%llu, %x\n", cpu->cycle_sum, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint16_t *)RelocAddr);
@@ -84,6 +86,7 @@ uint16_t MemRead16(uint32_t addr){
 
 uint8_t MemRead8(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
+    //if(addr >= 0x3000000 && addr < 0x4000000)printf(" 8 cycle:%llu, %x\n", cpu->cycle_sum, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint8_t *)RelocAddr);
@@ -92,6 +95,7 @@ uint8_t MemRead8(uint32_t addr){
 void MemWrite32(uint32_t addr, uint32_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint32_t tmp;
+    if(addr >= 0x3007f00 && addr < 0x3008000)printf("32 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
@@ -107,6 +111,7 @@ void MemWrite32(uint32_t addr, uint32_t data){
 void MemWrite16(uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint16_t tmp;
+    if(addr >= 0x3007f00 && addr < 0x3008000)printf("16 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
@@ -125,6 +130,7 @@ void MemWrite16(uint32_t addr, uint16_t data){
 void MemWrite8(uint32_t addr, uint8_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint8_t tmp;
+    if(addr >= 0x3007f00 && addr < 0x3008000)printf(" 8 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
