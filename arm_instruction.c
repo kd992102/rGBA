@@ -249,16 +249,13 @@ void ArmSWP(uint32_t inst){
     uint32_t Rd = (inst >> 12) & 0xf;
     uint32_t Rm = inst & 0xf;
     uint32_t tmp = 0;
-    //MemWrite32(0x2000000, 0xaaaaaaaa);
     if(B_bit){
         //byte
         cpu->Reg[Rd] = cpu->Reg[Rd] & 0xff;
         tmp = cpu->Reg[Rd];
         cpu->Reg[Rd] = (uint32_t)(MemRead8(cpu->Reg[Rn]) & 0xff);
-        //printf("Rm %08x tmp %08x\n", cpu->Reg[Rm], tmp);
-        if(Rd == Rm)MemWrite8(cpu->Reg[Rn], tmp);
+        if(Rd == Rm)MemWrite8(cpu->Reg[Rn], tmp & 0xff);
         else{MemWrite8(cpu->Reg[Rn], cpu->Reg[Rm] & 0xff);}
-        //printf("Content %08x\n", MemRead(cpu->Reg[Rn]));
     }
     else{
         //word
@@ -380,7 +377,7 @@ void ArmSWI(uint32_t inst){
     cpu->dMode = SVC;
     ChkCPUMode();
     //Initial SWI address
-    cpu->Reg[PC] = 0x08;
+    cpu->Reg[PC] = 0x8;
     cpu->SPSR = cpu->CPSR;
     //Entry address offset
     cpu->Reg[PC] += swi_num;
@@ -433,6 +430,7 @@ void ArmSDT(uint32_t inst){
         if(U_bit)Opr += Offset;
         else{Opr -= Offset;}
     }
+    //Opr = Opr - (Opr % 4);
     if(L_bit){
         //LDR
         if(B_bit){
@@ -440,12 +438,7 @@ void ArmSDT(uint32_t inst){
             cpu->Reg[Rd] = MemRead8(Opr);
         }
         else{
-            if((Opr % 4)){
-                printf("Cycle %d Address Must Be Multiply with 4!!!\n", cpu->cycle);
-            }
-            else{
-                cpu->Reg[Rd] = MemRead32(Opr);
-            }
+            cpu->Reg[Rd] = MemRead32(Opr);
         }
         cpu->cycle += 2;//1S+1N+1I
         if(Rd == PC)cpu->cycle += 2;
@@ -453,7 +446,8 @@ void ArmSDT(uint32_t inst){
     else{
         //STR
         if(B_bit){
-            MemWrite32(Opr, (cpu->Reg[Rd] & 0xff) | ((cpu->Reg[Rd] & 0xff) << 8) | ((cpu->Reg[Rd] & 0xff) << 16) | ((cpu->Reg[Rd] & 0xff) << 24));
+            //MemWrite32(Opr, (cpu->Reg[Rd] & 0xff) | ((cpu->Reg[Rd] & 0xff) << 8) | ((cpu->Reg[Rd] & 0xff) << 16) | ((cpu->Reg[Rd] & 0xff) << 24));
+            MemWrite8(Opr, cpu->Reg[Rd] & 0xff);
         }
         else{
             MemWrite32(Opr, cpu->Reg[Rd]);
@@ -514,7 +508,8 @@ void ArmSDTS(uint32_t inst){
     else{
         //STR
         if(SH == 1){
-            MemWrite16(Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
+            //MemWrite32(Opr, ((cpu->Reg[Rd] & 0xffff) | ((cpu->Reg[Rd] & 0xffff) << 16)));
+            MemWrite16(Opr, cpu->Reg[Rd] & 0xffff);
         }
         cpu->cycle += 1;
     }
