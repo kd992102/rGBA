@@ -114,19 +114,17 @@ int main(int argc, char *argv[]){
             cpu->cycle_sum += 1;
             if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
         }
-        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107*/
-        //cpu->cycle_sum >= 1731999
+        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18 interrupt*/
+        //cpu->cycle_sum >= 1731891 (0x733b)
         //CurrentInst == 0xE5CC3208
-        if(cpu->cycle_sum >= 1731895){
+        if(cpu->cycle_sum >= 100){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", CurrentInst);
             printf("Instruction Cycle:%d\n", cpu->cycle);
             printf("DISP:%x:%x\n", DISPSTAT, MemRead32(DISPSTAT));
+            printf("Interrupt:%x:%x\n", 0x4000200, MemRead32(0x4000200));
             printf("WRAM %x:%x\n", 0x3007ff0, MemRead32(0x3007ff0));
-            //printf("Palette %x:%x\n", 0x5000038, MemRead32(0x5000038));
-            //printf("BG %x:%x\n", 0x6000300, MemRead32(0x6000300));
-            //printf("OBJ %x:%x\n", 0x6016c92, MemRead32(0x6016c92));
             printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();
