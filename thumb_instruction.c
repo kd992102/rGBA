@@ -119,7 +119,12 @@ void ThumbLSH(uint16_t inst){
         //LDR
         cpu->Reg[Rd] = MemRead16(cpu->Reg[Rb] + (Offset << 1));
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+        }
     }
     else{
         MemWrite16(cpu->Reg[Rb] + (Offset << 1), (uint16_t)(cpu->Reg[Rd] & 0xffff));
@@ -134,7 +139,12 @@ void ThumbSPLS(uint16_t inst){
         //LDR
         cpu->Reg[Rd] = MemRead32(cpu->Reg[SP] + (Word << 2));
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+        }
     }
     else{
         MemWrite32(cpu->Reg[SP] + (Word << 2), cpu->Reg[Rd]);
@@ -153,7 +163,12 @@ void ThumbLADDR(uint16_t inst){
         //PC bit 1 force to 0
         cpu->Reg[Rd] = (cpu->Reg[PC] & 0xfffffffd) + (Word << 2);
     }
-    if(Rd == PC)cpu->cycle += 2;
+    if(Rd == PC){
+        cpu->cycle += 2;
+        cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+        cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+        cpu->Reg[PC] += 0x2;
+    }
 }
 void ThumbADDSP(uint16_t inst){
     uint8_t S_bit = (inst >> 7) & 0x1;
@@ -358,7 +373,12 @@ void ThumbPCLOAD(uint16_t inst){
     uint8_t Word = inst & 0xff;
     cpu->Reg[Rd] = MemRead32((cpu->Reg[PC] & 0xfffffffd) + (Word << 2));
     cpu->cycle += 2;
-    if(Rd == PC)cpu->cycle += 2;
+    if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+    }
 }
 void ThumbLSREG(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
@@ -371,7 +391,12 @@ void ThumbLSREG(uint16_t inst){
         if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Ro] + cpu->Reg[Rb]);
         else{cpu->Reg[Rd] = MemRead32(cpu->Reg[Ro] + cpu->Reg[Rb]);}
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+        }
     }
     else{
         //STR
@@ -398,7 +423,12 @@ void ThumbLSBH(uint16_t inst){
         }
         else{cpu->Reg[Rd] = (uint32_t)((((int32_t)MemRead8(cpu->Reg[Ro] + cpu->Reg[Rb])) << 24) >> 24);}
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+        }
     }
 }
 void ThumbLSIMM(uint16_t inst){
@@ -412,7 +442,12 @@ void ThumbLSIMM(uint16_t inst){
         if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Rb] + Offset);
         else{cpu->Reg[Rd] = MemRead32(cpu->Reg[Rb] + (Offset << 2));}
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
+            cpu->Reg[PC] += 0x2;
+        }
     }
     else{
         if(B_bit)MemWrite8(cpu->Reg[Rb] + Offset, cpu->Reg[Rd]);
@@ -437,7 +472,6 @@ void ThumbAS(uint16_t inst){
             CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, cpu->Reg[Rn]);
             break;
         case 1:
-            //printf("cycle %d Here!\n", cpu->cycle);
             cpu->Reg[Rd] = cpu->Reg[Rs] + Rn;
             CPSRUpdate(A_ADD, cpu->Reg[Rd], tmp, Rn);
             break;

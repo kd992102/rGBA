@@ -6,6 +6,7 @@
 #include "gba.h"
 
 extern Gba_Cpu *cpu;
+IntMask IntMasks;
 
 void InitCpu(uint32_t BaseAddr){
     for(int i=0;i<16;i++){
@@ -29,4 +30,10 @@ void Reset(){
     cpu->Reg[SP] = 0x3007F00;
     MemWrite16(0x4000088, 0x200);
     //
+}
+
+void IRQhandler(){
+    for(int i=0;i<13;i++){
+        if()
+    }
 }
