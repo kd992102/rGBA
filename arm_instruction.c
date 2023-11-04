@@ -214,9 +214,7 @@ void ArmBranch(uint32_t inst){
     //printf("PC : %08x\n", cpu->Reg[PC]);
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
-    cpu->Reg[PC] = cpu->Reg[PC];
     cpu->Reg[PC] += 0x4;
-    cpu->Reg[PC] = cpu->Reg[PC];
 
     cpu->cycle += 2;//2S+1N
 }
@@ -441,7 +439,12 @@ void ArmSDT(uint32_t inst){
             cpu->Reg[Rd] = MemRead32(Opr);
         }
         cpu->cycle += 2;//1S+1N+1I
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
+            cpu->Reg[PC] += 0x4;
+        }
     }
     else{
         //STR
@@ -503,7 +506,12 @@ void ArmSDTS(uint32_t inst){
         if(SH == 2)cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 24)) >> 24);
         else if(SH == 3){cpu->Reg[Rd] = (uint32_t)(((int32_t)(cpu->Reg[Rd] << 16)) >> 16);}
         cpu->cycle += 2;
-        if(Rd == PC)cpu->cycle += 2;
+        if(Rd == PC){
+            cpu->cycle += 2;
+            cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+            cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
+            cpu->Reg[PC] += 0x4;
+        }
     }
     else{
         //STR
