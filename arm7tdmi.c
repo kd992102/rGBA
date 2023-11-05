@@ -95,6 +95,7 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
     }
     cpu->CPSR &= 0xfffffff;
     cpu->CPSR |= (NZCV << 28);
+    cpu->carry_out = 0;
 }
 
 void RecoverReg(uint8_t Cmode){
