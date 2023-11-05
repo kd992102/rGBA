@@ -116,14 +116,17 @@ int main(int argc, char *argv[]){
         }
         /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
-        //CurrentInst == 0xE5CC3208
-        if(cpu->cycle_sum >= 100){
+        //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
+        if(cpu->cycle_sum >= 1731857){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", CurrentInst);
             printf("Instruction Cycle:%d\n", cpu->cycle);
             printf("DISP:%x:%x\n", DISPSTAT, MemRead32(DISPSTAT));
-            printf("Interrupt:%x:%x\n", 0x4000200, MemRead32(0x4000200));
+            printf("CPSR->I-flag%x\n", (cpu->CPSR >> 7) & 0x1);
+            printf("IME:%x:%x\n", 0x4000208, MemRead8(0x4000208));
+            printf("IE:%x:%x\n", 0x4000200, MemRead16(0x4000200));
+            printf("IR:%x:%x\n", 0x4000202, MemRead16(0x4000202));
             printf("WRAM %x:%x\n", 0x3007ff0, MemRead32(0x3007ff0));
             printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));

@@ -74,9 +74,7 @@ void ThumbUCOND(uint16_t inst){
     uint32_t Offset = inst & 0x7ff;
     Offset = Offset << 1;
     if(((Offset >> 11) & 0x1))Offset = Offset | 0xfffff000;
-    //printf("PC %08x, Offset %x\n", cpu->Reg[PC], Offset);
     cpu->Reg[PC] = cpu->Reg[PC] + Offset;
-    //printf("Cycle %d, PC %08x\n", cpu->cycle, cpu->Reg[PC]);
     cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
     cpu->Reg[PC] = cpu->Reg[PC];
@@ -173,11 +171,9 @@ void ThumbLADDR(uint16_t inst){
 void ThumbADDSP(uint16_t inst){
     uint8_t S_bit = (inst >> 7) & 0x1;
     uint8_t Word = (inst) & 0x7f;
-    //printf("Word:%08x\n", Word << 2);
     if(S_bit){
         //
         cpu->Reg[SP] = cpu->Reg[SP] - (Word << 2);
-        //printf("SP:%08x\n", cpu->Reg[SP]);
     }
     else{
         //PC bit 1 force to 0
@@ -522,11 +518,10 @@ void ThumbIMM(uint16_t inst){
         case 0:
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] = Offset;
-            cpu->carry_out = 1;
+            cpu->carry_out = !(cpu->Reg[Rd]>=0);
             CPSRUpdate(LOG, cpu->Reg[Rd], tmp, Offset);
             break;
         case 1:
-            //if(cpu->cycle >= 1600300)printf("Thumb CMP Rd:%x Offset %x\n", cpu->Reg[Rd], Offset);
             CPSRUpdate(A_SUB, cpu->Reg[Rd] - Offset, cpu->Reg[Rd], Offset);
             break;
         case 2:
