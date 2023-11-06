@@ -104,6 +104,17 @@ void MemWrite32(uint32_t addr, uint32_t data){
         //printf("tmp:%x\n", tmp);
         *((uint32_t *)RelocAddr) = ((data & 0xff00fff8)|(tmp & 0xff0007));
     }
+    else if(addr >= 0x4000200 && addr < 0x4000204){
+        printf("[write32] %x->%x\n", data, addr);
+        MemWrite8(addr,data & 0xff);
+        printf("[write8] %x->%x\n", data & 0xff, addr);
+        MemWrite8(addr+1,(data >> 8) & 0xff);
+        printf("[write8] %x->%x\n", (data >> 8) & 0xff, addr+1);
+        MemWrite8(addr+2,(data >> 16) & 0xff);
+        printf("[write8] %x->%x\n", (data >> 16) & 0xff, addr+2);
+        MemWrite8(addr+3,(data >> 24) & 0xff);
+        printf("[write8] %x->%x\n", (data >> 24) & 0xff, addr+3);
+    }
     else{*((uint32_t *)RelocAddr) = data;}
     //*((uint16_t *)RelocAddr) = data;
 }
@@ -121,6 +132,13 @@ void MemWrite16(uint32_t addr, uint16_t data){
     else if(addr == 0x4000006){
         tmp = *((uint16_t *)RelocAddr);
         *((uint16_t *)RelocAddr) = tmp;
+    }
+    else if(addr >= 0x4000202 && addr < 0x4000204){
+        //printf("[write16] %x->%x\n", data, addr);
+        MemWrite8(addr,data & 0xff);
+        //printf("[write8] %x->%x\n", data & 0xff, addr);
+        MemWrite8(addr+1,(data >> 8) & 0xff);
+        //printf("[write8] %x->%x\n", (data >> 8) & 0xff, addr+1);
     }
     else{
         *((uint16_t *)RelocAddr) = data;
@@ -141,12 +159,27 @@ void MemWrite8(uint32_t addr, uint8_t data){
         tmp = *((uint8_t *)RelocAddr);
         *((uint8_t *)RelocAddr) = tmp;
     }
+    else if(addr >= 0x4000200 && addr < 0x4000208){
+        //printf("[Write8] %x <- %x\n", addr ,data);
+        if(addr == 0x4000202){
+            tmp = *((uint8_t *)RelocAddr);
+            *((uint8_t *)RelocAddr) = ((tmp & ~0xff)|((tmp & 0xff) & (~data)));
+            //printf("[write-8] %x->%x\n", ((tmp & 0xff)|((tmp & ~0xff) & (~data))), addr);
+        }
+        else if(addr == 0x4000203){
+            tmp = *((uint8_t *)RelocAddr);
+            *((uint8_t *)RelocAddr) = ((tmp & ~0xff)|((tmp & 0xff) & (~data)));
+        }
+        else{
+            *((uint8_t *)RelocAddr) = data;
+        }
+    }
     else{*((uint8_t *)RelocAddr) = data;}
 }
 
 void PPUMemWrite16(uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
-    if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
+    else if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     *((uint16_t *)RelocAddr) = data;
 }

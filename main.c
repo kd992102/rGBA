@@ -95,39 +95,38 @@ int main(int argc, char *argv[]){
     PPUMemWrite16(VCOUNT, 0x7E);
     cpu->cycle = 0;
     cpu->cycle_sum = 0;
-    uint8_t Cmode = 0x1F;
-    uint32_t CurrentInst;
+    cpu->Cmode = 0x1F;
     for(;;){
-        Cmode = ChkCPUMode();
-        CurrentInst = cpu->fetchcache[2];
+        cpu->Cmode = ChkCPUMode();
+        cpu->CurrentInst = cpu->fetchcache[2];
         CpuExecute(cpu->fetchcache[2]);
 
         if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
         else{cpu->InstOffset = 0x4;}
 
-        RecoverReg(Cmode);
+        RecoverReg(cpu->Cmode);
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
-        //cpu->cycle_sum += cpu->cycle;
-        //cpu->cycle+=1;
+        IRQ_checker(cpu->CPSR);
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
             if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
         }
-        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18 interrupt*/
+        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
         //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
-        if(cpu->cycle_sum >= 1731857){
+        if(cpu->cycle_sum >= 810){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
-            printf("Current Instruction:%x\n", CurrentInst);
+            printf("Current Instruction:%x\n", cpu->CurrentInst);
             printf("Instruction Cycle:%d\n", cpu->cycle);
             printf("DISP:%x:%x\n", DISPSTAT, MemRead32(DISPSTAT));
-            printf("CPSR->I-flag%x\n", (cpu->CPSR >> 7) & 0x1);
+            printf("VCOUNT:%x\n", MemRead16(VCOUNT));
+            printf("CPSR->I-flag:%x\n", (cpu->CPSR >> 7) & 0x1);
             printf("IME:%x:%x\n", 0x4000208, MemRead8(0x4000208));
             printf("IE:%x:%x\n", 0x4000200, MemRead16(0x4000200));
             printf("IR:%x:%x\n", 0x4000202, MemRead16(0x4000202));
-            printf("WRAM %x:%x\n", 0x3007ff0, MemRead32(0x3007ff0));
+            printf("WRAM %x:%x\n", 0x3007ffc, MemRead32(0x3007ffc));
             printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();

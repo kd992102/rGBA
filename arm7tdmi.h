@@ -2,6 +2,7 @@
 #define A_ADD 1
 #define A_SUB 0
 #define LOG 2
+#define MOVS 3
 
 enum DECODE_MODE{
     ARM_MODE = 0,THUMB_MODE
@@ -56,7 +57,28 @@ typedef struct arm7tdmi{
     uint32_t fetchcache[3];
     uint64_t cycle;
     uint64_t cycle_sum;
+    uint32_t Cmode;
+    uint32_t CurrentInst;
 } Gba_Cpu;
+
+typedef enum IRQ_VECTOR IrqVec;
+
+enum IRQ_VECTOR {
+    LCD_VBLANK = (1<<0),
+    LCD_HBLANK = (1<<1),
+    LCD_VCOUNT = (1<<2),
+    TIMER0OF = (1<<3),
+    TIMER1OF = (1<<4),
+    TIMER2OF = (1<<5),
+    TIMER3OF = (1<<6),
+    SERIAL = (1<<7),
+    DMA0 = (1<<8),
+    DMA1 = (1<<9),
+    DMA2 = (1<<10),
+    DMA3 = (1<<11),
+    KEYPAD = (1<<12),
+    GAMEPAK = (1<<13)
+};
 
 uint8_t CheckCond();
 void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
@@ -69,3 +91,5 @@ void CpuStatus();
 void PreFetch(uint32_t Addr);
 void ThumbModeDecode(uint16_t inst);
 void ArmModeDecode(uint32_t inst);
+void IRQ_checker(uint32_t CPSR);
+void IRQ_handler();
