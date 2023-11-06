@@ -321,4 +321,11 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer){
 
     reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
     PPUMemWrite16(DISPSTAT, reg_status);
+    reg_status = MemRead16(DISPSTAT);
+    if(((reg_status >> 3) & 1) && ((reg_status) & 1)){
+        PPUMemWrite16(0x4000202, 0x1);
+        //printf("VCOUNT:%x\n", reg_vcount);
+    }
+    else if(((reg_status >> 4) & 1) && ((reg_status >> 1) & 1))PPUMemWrite16(0x4000202, 0x2);
+    else if(((reg_status >> 5) & 1) && ((reg_status >> 2) & 1))PPUMemWrite16(0x4000202, 0x3);
 }

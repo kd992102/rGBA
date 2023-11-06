@@ -516,10 +516,10 @@ void ThumbIMM(uint16_t inst){
     uint32_t tmp = 0;
     switch(Op){
         case 0:
+        //mov
             tmp = cpu->Reg[Rd];
             cpu->Reg[Rd] = Offset;
-            cpu->carry_out = !(cpu->Reg[Rd]>=0);
-            CPSRUpdate(LOG, cpu->Reg[Rd], tmp, Offset);
+            CPSRUpdate(MOVS, cpu->Reg[Rd], tmp, Offset);
             break;
         case 1:
             CPSRUpdate(A_SUB, cpu->Reg[Rd] - Offset, cpu->Reg[Rd], Offset);
