@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
         //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
         //0xa0 cycle:818 -> OK
         //1731994
-        if((cpu->CPSR & 0x1f) != 0x1f){
+        if(cpu->cycle_sum >= 100){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);

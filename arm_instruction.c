@@ -105,49 +105,60 @@ void ArmDataProc(uint32_t inst){
         case AND://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] & exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case EOR://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] ^ exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case SUB://arith
-            printf("CPSR:%x, R%d:IRQ%x, USER%x, exOpr:%x\n", cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn], exOpr);
-            if(Rd == PC){
-                cpu->cycle += 2;
-                /*if(Rn == LR){
-                    cpu->CPSR = cpu->SPSR;
-                    ChkCPUMode(cpu->CPSR);
-                }*/
-            }
+            if(cpu->cycle_sum > 1730000)printf("SPSR:%x, CPSR:%x, R%d:IRQ:%x, USER:%x\n", cpu->SPSR_irq, cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn]);
             cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
+            if(Rd == PC){
+                cpu->cycle += 2;
+                if(Rn == LR){
+                    cpu->CPSR = cpu->SPSR_irq;
+                    if((cpu->CPSR >> 6) & 0x1)cpu->dMode = THUMB_MODE;
+                    if(cpu->dMode == THUMB_MODE){
+                        cpu->InstOffset = 0x2;
+                        cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+                        cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + cpu->InstOffset);
+                    }
+                    else{
+                        cpu->InstOffset = 0x4;
+                        cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+                        cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + cpu->InstOffset);
+                    }
+                    cpu->Reg[PC] += cpu->InstOffset;
+                }
+            }
             break;
         case RSB://arith
             cpu->Reg[Rd] = exOpr - cpu->Reg[Rn];
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], exOpr, cpu->Reg[Rn]);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case ADD://arith
             cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr;
             if(S_bit)CPSRUpdate(A_ADD, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case ADC://arith
             cpu->Reg[Rd] = cpu->Reg[Rn] + exOpr + ((cpu->CPSR >> 29) & 0x1);
             if(S_bit)CPSRUpdate(A_ADD, cpu->Reg[Rd], cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1), exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case SBC://arith
             cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr + ((cpu->CPSR >> 29) & 0x1) - 1;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], cpu->Reg[Rn] - !((cpu->CPSR >> 29) & 0x1), exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case RSC://arith
             cpu->Reg[Rd] = exOpr - cpu->Reg[Rn] + ((cpu->CPSR >> 29) & 0x1) - 1;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], exOpr - !((cpu->CPSR >> 29) & 0x1), cpu->Reg[Rn]);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case TST://logical
                 //AND
@@ -178,7 +189,6 @@ void ArmDataProc(uint32_t inst){
                 //printf("cmp\n");
                 CPSRUpdate(A_SUB, cpu->Reg[Rn] - exOpr, cpu->Reg[Rn], exOpr);
             }
-            //printf("CSPR:%08x\n", cpu->CPSR);
             break;
         case CMN://arith
             //ADD
@@ -188,22 +198,22 @@ void ArmDataProc(uint32_t inst){
         case ORR://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] | exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case MOV://logical
             cpu->Reg[Rd] = exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case BIC://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] & ~(exOpr);
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
         case MVN://logical
             cpu->Reg[Rd] = ~(exOpr);
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
+            if(Rd == PC){cpu->cycle += 2;}
             break;
     }
 }

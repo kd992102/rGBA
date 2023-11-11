@@ -444,9 +444,10 @@ void IRQ_checker(uint32_t CPSR){
 void IRQ_handler(){
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
+    cpu->SPSR_irq = cpu->CPSR;
     cpu->CPSR = (cpu->CPSR & 0xffffffc0) | (0x12);
     printf("interrupt CPSR->%x\n", cpu->CPSR);
-    cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
+    cpu->Reg_irq[1] = cpu->Reg[PC];//next instruction
     cpu->Reg[PC] = 0x18;
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
