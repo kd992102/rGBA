@@ -113,9 +113,16 @@ void ArmDataProc(uint32_t inst){
             if(Rd == PC)cpu->cycle += 2;
             break;
         case SUB://arith
+            printf("CPSR:%x, R%d:IRQ%x, USER%x, exOpr:%x\n", cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn], exOpr);
+            if(Rd == PC){
+                cpu->cycle += 2;
+                /*if(Rn == LR){
+                    cpu->CPSR = cpu->SPSR;
+                    ChkCPUMode(cpu->CPSR);
+                }*/
+            }
             cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC)cpu->cycle += 2;
             break;
         case RSB://arith
             cpu->Reg[Rd] = exOpr - cpu->Reg[Rn];

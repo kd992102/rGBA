@@ -260,6 +260,7 @@ void ArmModeDecode(uint32_t inst){
                         if(((inst >> 8) & 0xf) == 0 && ((inst >> 20) & 0x3) == 0 && ((inst >> 23) & 0x7) == 2)ArmSWP(inst);
                         else if(((inst >> 23) & 0x7) == 1)ArmMULL(inst);
                         else if(((inst >> 22) & 0xf) == 0)ArmMUL(inst);
+                        else{ArmDataProc(inst);}
                     }
                     else{
                         ArmDataProc(inst);
@@ -444,7 +445,6 @@ void IRQ_handler(){
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
     cpu->CPSR = (cpu->CPSR & 0xffffffc0) | (0x12);
-    cpu->Cmode = ChkCPUMode();
     printf("interrupt CPSR->%x\n", cpu->CPSR);
     cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
     cpu->Reg[PC] = 0x18;
@@ -452,8 +452,7 @@ void IRQ_handler(){
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;
     //cpu->cycle += 3;//2S+1N
-
-    cpu->Cmode = ChkCPUMode();
+    /*cpu->Cmode = ChkCPUMode();
     cpu->CurrentInst = cpu->fetchcache[2];
     CpuExecute(cpu->fetchcache[2]);
 
@@ -462,5 +461,5 @@ void IRQ_handler(){
 
     RecoverReg(cpu->Cmode);
     cpu->Reg[PC] += cpu->InstOffset;
-    PreFetch(cpu->Reg[PC]);//fetch new instruction
+    PreFetch(cpu->Reg[PC]);//fetch new instruction*/
 }

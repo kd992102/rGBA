@@ -103,7 +103,6 @@ int main(int argc, char *argv[]){
 
         if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
         else{cpu->InstOffset = 0x4;}
-
         RecoverReg(cpu->Cmode);
         cpu->Reg[PC] += cpu->InstOffset;
         PreFetch(cpu->Reg[PC]);//fetch new instruction
@@ -115,7 +114,9 @@ int main(int argc, char *argv[]){
         /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
         //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
-        if(cpu->cycle_sum >= 810){
+        //0xa0 cycle:818 -> OK
+        //1731994
+        if((cpu->CPSR & 0x1f) != 0x1f){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);
@@ -134,13 +135,6 @@ int main(int argc, char *argv[]){
         }
         cpu->cycle = 0;
     }
-
-    //Video Test Loop
-    /*for(;;){
-        PPU_update(cpu->cycle, texture, renderer);
-        cpu->cycle += 1;
-    }*/
-
     Release_GbaMem();
     free(cpu);
     cpu = NULL;
