@@ -96,27 +96,33 @@ int main(int argc, char *argv[]){
     cpu->cycle = 0;
     cpu->cycle_sum = 0;
     cpu->Cmode = 0x1F;
+    cpu->Halt = 0;
+    //getchar();
     for(;;){
-        cpu->Cmode = ChkCPUMode();
-        cpu->CurrentInst = cpu->fetchcache[2];
-        CpuExecute(cpu->fetchcache[2]);
+        if(cpu->Halt == 0){
+            cpu->Cmode = ChkCPUMode();
+            cpu->CurrentInst = cpu->fetchcache[2];
+            CpuExecute(cpu->fetchcache[2]);
 
-        if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
-        else{cpu->InstOffset = 0x4;}
-        RecoverReg(cpu->Cmode);
-        cpu->Reg[PC] += cpu->InstOffset;
-        PreFetch(cpu->Reg[PC]);//fetch new instruction
+            if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
+            else{cpu->InstOffset = 0x4;}
+            RecoverReg(cpu->Cmode);
+            cpu->Reg[PC] += cpu->InstOffset;
+            PreFetch(cpu->Reg[PC]);//fetch new instruction
+        }
         IRQ_checker(cpu->CPSR);
+        if(cpu->Halt == 1)cpu->cycle = 1;
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
-            if(cpu->cycle_sum % 4 == 0)PPU_update(cpu->cycle_sum, texture, renderer);
+            if((cpu->cycle_sum - 393) % 4 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer);
         }
         /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
         //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
         //0xa0 cycle:818 -> OK
-        //1731994
-        if(cpu->cycle_sum >= 100){
+        //0xbb4 tst r0,0xe000000
+        //1730918, 515011
+        /*if(cpu->cycle_sum >= 9000000){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);
@@ -130,9 +136,9 @@ int main(int argc, char *argv[]){
             printf("WRAM %x:%x\n", 0x3007ffc, MemRead32(0x3007ffc));
             printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
-            getchar();
+            //getchar();
             //exit(1);
-        }
+        }*/
         cpu->cycle = 0;
     }
     Release_GbaMem();
