@@ -30,6 +30,7 @@ uint32_t BarrelShifter(uint32_t Opr, uint8_t Imm, uint32_t result){
             case LSL:
                 result = cpu->Reg[(Opr & 0xf)] << shift;
                 if(shift != 0)cpu->carry_out = (cpu->Reg[(Opr & 0xf)] >> (32 - shift)) & 0x1;
+                else{cpu->carry_out = 2;}
                 break;
             case LSR:
                 result = cpu->Reg[(Opr & 0xf)] >> shift;
@@ -113,7 +114,7 @@ void ArmDataProc(uint32_t inst){
             if(Rd == PC){cpu->cycle += 2;}
             break;
         case SUB://arith
-            if(cpu->cycle_sum > 1730000)printf("SPSR:%x, CPSR:%x, R%d:IRQ:%x, USER:%x\n", cpu->SPSR_irq, cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn]);
+            //if(cpu->cycle_sum > 1730000)printf("SPSR:%x, CPSR:%x, R%d:IRQ:%x, USER:%x\n", cpu->SPSR_irq, cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn]);
             cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC){
@@ -162,25 +163,31 @@ void ArmDataProc(uint32_t inst){
             break;
         case TST://logical
                 //AND
-            if(!S_bit)ArmPSRT(inst);
-            //else{CPSRUpdate(LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
-            if(((cpu->Reg[Rn] & exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
+            if(!S_bit){
+                ArmPSRT(inst);
+                break;
+            }
+            else{CPSRUpdate(LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
+            /*if(((cpu->Reg[Rn] & exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
             else{cpu->CPSR &= 0x7fffffff;}
             if(!(cpu->Reg[Rn] & exOpr))cpu->CPSR |= 0x40000000;//Z flag
             else{cpu->CPSR &= 0xbfffffff;}
             if(cpu->carry_out)cpu->CPSR |= 0x20000000;
-            else{cpu->CPSR &= 0xffffffff;}
+            else{cpu->CPSR &= 0xffffffff;}*/
             break;
         case TEQ://logical
                 //EOR
-            if(!S_bit)ArmPSRT(inst);
-            //else{CPSRUpdate(LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
-            if(((cpu->Reg[Rn] ^ exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
+            if(!S_bit){
+                ArmPSRT(inst);
+                break;
+            }
+            else{CPSRUpdate(LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
+            /*if(((cpu->Reg[Rn] ^ exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
             else{cpu->CPSR &= 0x7fffffff;}
             if(!(cpu->Reg[Rn] ^ exOpr))cpu->CPSR |= 0x40000000;//Z flag
             else{cpu->CPSR &= 0xbfffffff;}
             if(cpu->carry_out)cpu->CPSR |= 0x20000000;
-            else{cpu->CPSR &= 0xffffffff;}
+            else{cpu->CPSR &= 0xffffffff;}*/
             break;
         case CMP://arith
                 //SUB

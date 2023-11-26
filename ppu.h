@@ -71,8 +71,17 @@ struct OAM {
     uint16_t at3;
 };
 
+struct OBJ_Affine {
+    uint16_t PA;
+    uint16_t PB;
+    uint16_t PC;
+    uint16_t PD;
+};
+
 typedef struct OAM OAM_attr;
 
+struct OBJ_Affine * LoadOBJAffine(struct OBJ_Affine * affine, uint16_t GroupNum);
+void DrawBG(SDL_Renderer *renderer, uint16_t vcount, uint16_t h);
 void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h);
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
 void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer);

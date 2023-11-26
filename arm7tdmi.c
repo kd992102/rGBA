@@ -74,7 +74,8 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
     else{NZCV &= 0xb;}
 
     if(Opcode == LOG){
-        if(cpu->carry_out)NZCV |= 0x2;
+        if(cpu->carry_out == 1)NZCV |= 0x2;
+        else if(cpu->carry_out == 2)NZCV = NZCV;
         else{
             NZCV &= 0xd;
         }
@@ -434,9 +435,19 @@ void IRQ_checker(uint32_t CPSR){
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                printf("interrupt!\n");
+                //printf("interrupt!\n");
                 IRQ_handler();
             }
+        }
+    }
+    else{
+        if(cpu->Halt){
+            if(MemRead8(0x4000208)){//IME
+            if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
+                //printf("interrupt!\n");
+                IRQ_handler();
+            }
+        }
         }
     }
 }
@@ -446,12 +457,15 @@ void IRQ_handler(){
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
     cpu->CPSR = (cpu->CPSR & 0xffffffc0) | (0x12);
-    printf("interrupt CPSR->%x\n", cpu->CPSR);
+    //printf("interrupt CPSR->%x\n", cpu->CPSR);
     cpu->Reg_irq[1] = cpu->Reg[PC];//next instruction
     cpu->Reg[PC] = 0x18;
-    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
-    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
-    cpu->Reg[PC] += 0x4;
+    //printf("PC:%x, IRQ_LR:%x\n", cpu->Reg[PC], cpu->Reg_irq[1]);
+    cpu->fetchcache[2] = MemRead32(cpu->Reg[PC]);
+    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC] + 0x4);
+    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x8);
+    cpu->Reg[PC] += 0x8;
+    cpu->Halt = 0;
     //cpu->cycle += 3;//2S+1N
     /*cpu->Cmode = ChkCPUMode();
     cpu->CurrentInst = cpu->fetchcache[2];

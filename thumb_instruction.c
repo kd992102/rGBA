@@ -209,6 +209,7 @@ void ThumbPPREG(uint16_t inst){
         if(R_bit){
                 cpu->Reg[SP] = cpu->Reg[SP] - 4;
                 MemWrite32(cpu->Reg[SP], cpu->Reg[LR]);
+                n += 1;
         }
         for(int i=7;i>=0;i--){
             if((RegList >> i) & 0x1){
@@ -217,7 +218,8 @@ void ThumbPPREG(uint16_t inst){
                 n += 1;
             }
         }
-        cpu->cycle += (n + 1);
+        //printf("cycle : %lld push n: %d\n",cpu->cycle_sum, n);
+        cpu->cycle += (n);
     }
 }
 void ThumbALU(uint16_t inst){

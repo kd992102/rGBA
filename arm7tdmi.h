@@ -59,6 +59,7 @@ typedef struct arm7tdmi{
     uint64_t cycle_sum;
     uint32_t Cmode;
     uint32_t CurrentInst;
+    uint8_t Halt;
 } Gba_Cpu;
 
 typedef enum IRQ_VECTOR IrqVec;
