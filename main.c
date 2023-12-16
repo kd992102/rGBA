@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
     }
-    if (SDL_CreateWindowAndRenderer(308, 228, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+    if (SDL_CreateWindowAndRenderer(240, 160, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
     }
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
@@ -111,10 +111,12 @@ int main(int argc, char *argv[]){
             PreFetch(cpu->Reg[PC]);//fetch new instruction
         }
         IRQ_checker(cpu->CPSR);
-        if(cpu->Halt == 1)cpu->cycle = 1;
+        if(cpu->Halt == 1){
+            cpu->cycle = 1;
+        }
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
-            if((cpu->cycle_sum - 393) % 4 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer);
+            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer);
         }
         /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
@@ -136,7 +138,7 @@ int main(int argc, char *argv[]){
             printf("WRAM %x:%x\n", 0x3007ffc, MemRead32(0x3007ffc));
             printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
-            //getchar();
+            getchar();
             //exit(1);
         }*/
         cpu->cycle = 0;
