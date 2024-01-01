@@ -64,6 +64,8 @@
 #define BLDALPHA 0x4000052
 #define BLDY 0x4000054
 
+#define PALETTE_ADDR 0x5000200
+
 struct OAM {
     uint16_t at0;
     uint16_t at1;
@@ -78,12 +80,25 @@ struct OBJ_Affine {
     uint16_t PD;
 };
 
+struct BG_CNT {
+    uint8_t Prio;
+    uint8_t CharBaseBlock;
+    uint8_t Mosaic;
+    uint8_t Color;
+    uint8_t ScreenBaseBlock;
+    uint8_t DispAreaOverflow;
+    uint8_t ScreenSize;
+};
+
 typedef struct OAM OAM_attr;
 
+struct BG_CNT LoadBGCNT(struct BG_CNT BGCNT, uint8_t BGNum);
 struct OBJ_Affine * LoadOBJAffine(struct OBJ_Affine * affine, uint16_t GroupNum);
-void DrawBG(SDL_Renderer *renderer, uint16_t vcount, uint16_t h);
-void DrawScreen(SDL_Renderer *renderer, char screen[0xE4][0x200]);
-void DrawSprite(SDL_Renderer* renderer, uint16_t vcount, uint16_t h);
+uint32_t ColorFormatTranslate(uint16_t BGR555);
+
+void DrawBG(SDL_Renderer *renderer);
+void ScalePixel(void *coord, uint8_t scale, uint8_t ox, uint8_t oy);
+void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen);
+void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
-void DrawScanLine(uint16_t vcount, SDL_Texture* texture, SDL_Renderer* renderer);
-void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer);
+void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
