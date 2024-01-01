@@ -9,10 +9,6 @@
 #include "gba.h"
 #include "ppu.h"
 
-static SDL_Renderer* renderer;
-static SDL_Window* window;
-static SDL_Texture* texture;
-
 //struct gba_rom *gba_rom;
 FILE *bios;
 FILE *rom;
@@ -27,6 +23,9 @@ static const char bios_file_name[] = "gba_bios.bin";
 static const char rom_file_name[] = "pok_g_386.gba";
 
 int main(int argc, char *argv[]){
+    void *screen;
+    screen = malloc(sizeof(uint32_t) * 240 * 4 * 160);
+    printf("screen %x\n", screen);
 
     bios = fopen(bios_file_name, "rb");
     cpu = malloc(sizeof(Gba_Cpu));
@@ -70,27 +69,27 @@ int main(int argc, char *argv[]){
         rom = NULL;
         return 1;
     }
-    printf("--->%x\n", Mem->Game_ROM1[0]);
     uint16_t sample = 0x0;
-    /*for(uint32_t i=0; i < 0x2000000; i+=2){
-        MemWrite16(0x8000000 + i, sample);
-        sample += 1;
-    }*/
-    //memcpy(Mem->Game_ROM1, rom, 0x2000000);
+
     memcpy(Mem->Game_ROM2, Mem->Game_ROM1, 0x2000000);
     memcpy(Mem->Game_ROM3, Mem->Game_ROM1, 0x2000000);
     
     cpu->Reg[PC] = 0x00000000;//ROM File Reg[PC]
     InitCpu(cpu->Reg[PC]);
 
-    //PPUInit(renderer, window, texture);
+    SDL_Renderer* renderer;
+    SDL_Window* window;
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
     }
     if (SDL_CreateWindowAndRenderer(240, 160, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
     }
-    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x00);
+
+    SDL_Texture* texture;
+    int32_t tex_pitch = 240*4;
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGRA8888, SDL_TEXTUREACCESS_STREAMING, 240, 160);
+    SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0x00);
     SDL_RenderClear(renderer);
     PPUMemWrite16(VCOUNT, 0x7E);
     cpu->cycle = 0;
@@ -98,6 +97,16 @@ int main(int argc, char *argv[]){
     cpu->Cmode = 0x1F;
     cpu->Halt = 0;
     //getchar();
+    SDL_LockTexture(texture, NULL, &screen, &tex_pitch);
+    for(uint32_t addr = 0;addr < (159*240*4);addr += 0x10){
+        *(uint32_t *)(screen + (addr | 0x0)) = ColorFormatTranslate(0x7fff);
+        *(uint32_t *)(screen + (addr | 0x4)) = ColorFormatTranslate(0x7fff);
+        *(uint32_t *)(screen + (addr | 0x8)) = ColorFormatTranslate(0x7fff);
+        *(uint32_t *)(screen + (addr | 0xc)) = ColorFormatTranslate(0x7fff);
+    }
+    SDL_UnlockTexture(texture);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
     for(;;){
         if(cpu->Halt == 0){
             cpu->Cmode = ChkCPUMode();
@@ -116,7 +125,7 @@ int main(int argc, char *argv[]){
         }
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
-            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer);
+            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
         }
         /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
         //cpu->cycle_sum >= 1731891 (0x733b)
