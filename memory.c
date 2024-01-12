@@ -27,7 +27,7 @@ void Init_GbaMem(){
     Mem->Game_ROM3 = malloc(sizeof(uint8_t) * GAME_ROM_MAXSIZE);
     memset(Mem->Game_ROM3, 0, GAME_ROM_MAXSIZE);
     Mem->Game_SRAM = malloc(sizeof(uint8_t) * GAME_SRAM_MEM_SIZE);
-    memset(Mem->Game_SRAM, 0, GAME_SRAM_MEM_SIZE);
+    memset(Mem->Game_SRAM, 0xff, GAME_SRAM_MEM_SIZE);
 }
 
 void Release_GbaMem(){
