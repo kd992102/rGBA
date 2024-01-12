@@ -133,7 +133,7 @@ int main(int argc, char *argv[]){
         //0xa0 cycle:818 -> OK
         //0xbb4 tst r0,0xe000000
         //1730918, 515011
-        /*if(cpu->cycle_sum >= 9000000){
+        /*if((cpu->Reg[PC] - (cpu->InstOffset * 2)) > 0x8000000){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);

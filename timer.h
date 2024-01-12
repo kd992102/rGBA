@@ -1,9 +1,30 @@
-#define TM0CNT_L 0x4000100
-#define TM1CNT_L 0x4000104
-#define TM2CNT_L 0x4000108
-#define TM3CNT_L 0x400010C
+#include <stdint.h>
+//For Data Use
+//儲存資料使用
+#define TM0_D 0x4000100
+#define TM1_D 0x4000104
+#define TM2_D 0x4000108
+#define TM3_D 0x400010C
 
-#define TM0CNT_H 0x4000102
-#define TM1CNT_H 0x4000106
-#define TM2CNT_H 0x400010A
-#define TM3CNT_H 0x400010E
+//For Control Use
+//控制使用
+#define TM0CNT 0x4000102
+#define TM1CNT 0x4000106
+#define TM2CNT 0x400010A
+#define TM3CNT 0x400010E
+
+#define TMR_CASCADE (1 << 2)
+#define TMR_IRQ (1 << 6)
+#define TMR_ENB (1 << 7)
+
+//16bit
+struct TimerControl {
+    uint8_t TM_FREQ_Y;
+    uint8_t TM_CASCADE;
+    uint8_t TM_IRQ;
+    uint8_t TM_ENABLE;
+};
+
+uint16_t TM_CNT[4];
+uint16_t * ReadTimer(uint16_t *Timer);
+void Timer_Clock(uint64_t cycles);

@@ -95,7 +95,7 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
     uint8_t Color, Mosaic, Shape, RSFlag, DoubleFlag, OBJMode;
     int16_t Xcoord;
     int8_t Ycoord;
-    uint8_t HFlip, VFlip, OBJSize, RSparam, Priority, Disable;
+    uint8_t HFlip, VFlip, OBJSize, RSparam, Priority, Disable, chr_pal;
     uint16_t TileNum;
     uint32_t TileAddr;
     uint8_t ObjH, ObjV;
@@ -123,12 +123,12 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
         Mosaic = (OBJattr.at0 >> 12) & 0x1;
         Shape = (OBJattr.at0 >> 14) & 0x3;
         Color = (OBJattr.at0 >> 13) & 0x1;
-        if(Color == 0)(OBJattr.at2 >> 12) & 0xf;
+        if(Color == 0)chr_pal = (OBJattr.at2 >> 12) & 0xf;
         OBJSize = (OBJattr.at1 >> 14) & 0x3;
         DoubleFlag = (OBJattr.at0 >> 9) & 0x1;
         HFlip = (OBJattr.at1 >> 12) & 0x1;
         VFlip = (OBJattr.at1 >> 13) & 0x1;
-        TileAddr = 0x6010000 + ((OBJattr.at2 & 0x3ff) * 32);
+        TileAddr = 0x6010000 + ((OBJattr.at2 & 0x3ff) << 5);
         switch(Shape){
             case 0:
                 switch(OBJSize){
@@ -191,67 +191,181 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
                 }
                 break;
         }
-        printf("OAM:%x, ObjV:%d, ObjH:%d\n", OAM_ADDR, ObjV, ObjH);
-        /*if(DoubleFlag){
+        //if(OAM_ADDR == 0x7000030 && (ObjV != ObjH))printf("G OAM:%x, ObjV:%d, ObjH:%d\n", OAM_ADDR, ObjV, ObjH);
+        if(Xcoord >= 0x100)Xcoord = (int16_t)(Xcoord - 0x1FF);
+        int16_t x_max = 240, y_max = 160;
+        if(DoubleFlag){
             ObjV = ObjV*2;
             ObjH = ObjH*2;
-        }*/
-        if(Xcoord >= 0x100)Xcoord = (int16_t)(Xcoord - 0x1FF);
-        
+            if((Ycoord + ObjV/2) < y_max)y_max = (Ycoord + ObjV/2);
+            if((Xcoord + ObjH/2) < x_max)x_max = (Xcoord + ObjH/2);
+        }
+        else{
+            if((Ycoord + ObjV) < y_max)y_max = (Ycoord + ObjV) & 0xff;
+            if((Xcoord + ObjH) < x_max)x_max = (Xcoord + ObjH) & 0xff;
+        }
+        if(y_max < Ycoord)Ycoord -= 256;
         int16_t sprx;
-        uint8_t spry;
-        if((int8_t)vcount == Ycoord){
+        int16_t spry;
+        //if(Ycoord < 0)printf("RS Flag:%d, G OAM:%x, ObjV:%d, ObjH:%d, Vcount:%d, Ycoord:%d\n", RSFlag, OAM_ADDR, ObjV, ObjH, vcount, Ycoord);
+        if(vcount >= Ycoord && vcount < y_max){
+            int16_t rcy = Ycoord + (ObjV/2);
+            int16_t rcx = Xcoord + (ObjH/2);
             if(RSFlag){
-                int16_t x_max = 240, y_max = 160;
-                //printf("ObjV:%d, ObjH:%d\n", ObjV, ObjH);
-                if((Ycoord + ObjV) < y_max)y_max = (Ycoord + ObjV);
-                if((Xcoord + ObjH) < x_max)x_max = (Xcoord + ObjH);
+                float PA, PB, PC, PD;
+                PA = fx_to_float(affine->PA);
+                PB = fx_to_float(affine->PB);
+                PC = fx_to_float(affine->PC);
+                PD = fx_to_float(affine->PD);
+                int16_t newx, newy;
                 if(DoubleFlag){
-                    //printf("ObjV:%d, ObjH:%d\n", ObjV, ObjH);
-                    for(spry = Ycoord; spry < y_max; spry+=1){
-                        for(sprx = Xcoord;sprx < x_max;sprx+=1){
-                            if(((((sprx - Xcoord)*2 + Xcoord) >= 0) && (((sprx - Xcoord)*2 + Xcoord) < 239)) && ((((spry - Ycoord)*2 + Ycoord) >= 0) && (((spry - Ycoord)*2 + Ycoord) < 159))){
-                                //TileAddr + 0x400 * ((spry - Ycoord) / 8) + 0x40 * ((sprx - Xcoord) / 8) + (spry - Ycoord) * 8 + ((sprx - Xcoord) % 8)
-                                uint8_t data = MemRead8(TileAddr + 0x400 * ((spry - Ycoord) / 8) + 0x40 * ((sprx - Xcoord) / 8) + ((spry - Ycoord) % 8) * 8 + ((sprx - Xcoord) % 8));
-                                if(data != 0)*(uint32_t *)(screen + ((spry - Ycoord)*2 + Ycoord)*240*4 + ((sprx - Xcoord)*2 + Xcoord)*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
-                                if(data != 0)*(uint32_t *)(screen + ((spry - Ycoord)*2 + Ycoord)*240*4 + ((sprx - Xcoord)*2 + Xcoord + 1)*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
-                                if(data != 0)*(uint32_t *)(screen + ((spry - Ycoord)*2 + Ycoord + 1)*240*4 + ((sprx - Xcoord)*2 + Xcoord)*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
-                                if(data != 0)*(uint32_t *)(screen + ((spry - Ycoord)*2 + Ycoord + 1)*240*4 + ((sprx - Xcoord)*2 + Xcoord + 1)*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                    uint32_t col;
+                    for(spry = Ycoord; spry < y_max; spry++){
+                        for(sprx = Xcoord;sprx < x_max;sprx++){
+                            int16_t scx = (sprx - Xcoord)*2 + Xcoord;
+                            //if(scx >= 0x100)scx = (int16_t)(scx - 0x1FF);
+                            int16_t scy = (spry - Ycoord)*2 + Ycoord;
+                            //if(y_max < scy)scy -= 256;
+                            uint8_t data = MemRead8(TileAddr + 0x400 * ((spry - Ycoord)/8) + 0x40 * ((sprx - Xcoord)/8) + ((spry - Ycoord) % 8) * 8 + ((sprx - Xcoord) % 8));
+                            if(data != 0){
+                                col = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                                newx = (scx - rcx)*PA + PB*(scy - rcy) + rcx;
+                                newy = PC*(scx - rcx) + (scy - rcy)*PD + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx + 1)*PA + PB*(scy - rcy) + rcx;
+                                newy = PC*(scx - rcx + 1) + (scy - rcy)*PD + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx)*PA + PB*(scy - rcy + 1) + rcx;
+                                newy = PC*(scx - rcx) + (scy - rcy + 1)*PD + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx + 1)*PA + PB*(scy - rcy + 1) + rcx;
+                                newy = PC*(scx - rcx + 1) + (scy - rcy + 1)*PD + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                /*col = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                                newx = (scx - rcx)/PA/2 + PB*(scy - rcy) + rcx;
+                                newy = PC*(scx - rcx) + (scy - rcy)/PD/2 + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx + 1)/PA/2 + PB*(scy - rcy) + rcx;
+                                newy = PC*(scx - rcx + 1) + (scy - rcy)/PD/2 + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx)/PA/2 + PB*(scy - rcy + 1) + rcx;
+                                newy = PC*(scx - rcx) + (scy - rcy + 1)/PD/2 + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }
+                                newx = (scx - rcx + 1)/PA/2 + PB*(scy - rcy + 1) + rcx;
+                                newy = PC*(scx - rcx + 1) + (scy - rcy + 1)/PD/2 + rcy;
+                                if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                    *(uint32_t *)(screen + (newy)*240*4 + (newx)*4) = col;
+                                }*/
+                                /*if(((scx >= 0) && (scx < 240)) && ((scy >= 0) && (scy < 160))){
+                                    *(uint32_t *)(screen + (scy)*240*4 + (scx)*4) = col;
+                                    *(uint32_t *)(screen + (scy)*240*4 + (scx+1)*4) = col;
+                                    *(uint32_t *)(screen + (scy+1)*240*4 + (scx)*4) = col;
+                                    *(uint32_t *)(screen + (scy+1)*240*4 + (scx+1)*4) = col;
+                                }*/
                             }
                         }
                     }
                 }
                 else{
-                    //printf("ObjV:%d, ObjH:%d\n", ObjV, ObjH);
+                    int16_t newx;
+                    int16_t newy;
                     for(spry = Ycoord; spry < y_max; spry++){
                         for(sprx = Xcoord;sprx < x_max;sprx++){
-                            if((sprx >= 0 && sprx < 240) && (spry >= 0 && spry < 160)){
+                            newx = (sprx - rcx)/PA + PB*(spry - rcy) + rcx;
+                            newy = PC*(sprx - rcx) + (spry - rcy)/PD + rcy;
+                            if(((newx >= 0) && (newx < 240)) && ((newy >= 0) && (newy < 160))){
+                                //TileAddr + 0x400 * ((spry - Ycoord) / 8) + 0x40 * ((sprx - Xcoord) / 8) + (spry - Ycoord) * 8 + ((sprx - Xcoord) % 8)
                                 uint8_t data = MemRead8(TileAddr + 0x400 * ((spry - Ycoord) / 8) + 0x40 * ((sprx - Xcoord) / 8) + ((spry - Ycoord) % 8) * 8 + ((sprx - Xcoord) % 8));
-                                if(data != 0)*(uint32_t *)(screen + spry*240*4 + sprx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                                if(data != 0){
+                                    *(uint32_t *)(screen + newy*240*4 + newx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                                }
                             }
                         }
                     }
                 }
             }
             else{
-                int16_t x_max = 240, y_max = 160;
-                if((Ycoord + ObjV) < y_max)y_max = (Ycoord + ObjV);
-                if((Xcoord + ObjH) < x_max)x_max = (Xcoord + ObjH);
                 for(spry = Ycoord; spry < y_max; spry++){
                     for(sprx = Xcoord;sprx < x_max;sprx++){
                         if((sprx >= 0 && sprx < 240) && (spry >= 0 && spry < 160)){
                             uint8_t data = MemRead8(TileAddr + 0x400 * ((spry - Ycoord) / 8) + 0x40 * ((sprx - Xcoord) / 8) + ((spry - Ycoord) % 8) * 8 + ((sprx - Xcoord) % 8));
-                            if(data != 0)*(uint32_t *)(screen + spry*240*4 + sprx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                            if(data != 0){
+                                *(uint32_t *)(screen + spry*240*4 + sprx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
+                            }
                         }
                     }
                 }
-                //printf("finish\n");
-                //printf("ObjH*ObjV = %d, count=%d\n", ObjH*ObjV, count);
             }
         }
         
-        //uint32_t *array;//64 pixels = 1 tile
-        //array = malloc(sizeof(uint32_t) * ObjH * ObjV);
+        /*uint32_t surf_addr = v_count * 240 * 4;
+        int16_t pa, pb, pc, pd;
+        pa = pd = 0x100;
+        pc = pb = 0x0;
+        if(RSFlag){
+            pa = (int16_t)affine->PA;
+            pb = (int16_t)affine->PB;
+            pc = (int16_t)affine->PC;
+            pd = (int16_t)affine->PD;
+        }
+
+        int32_t rcx = ObjH/2;
+        int32_t rcy = ObjV/2;
+
+        if((Ycoord + ObjV) > 0xff) Ycoord -= 0x100;
+        if((Ycoord <= v_count) && (Ycoord + ObjV > vcount)){
+            uint32_t chr_base = 0x10000 | TileNum * 32;
+            Xcoord <<= 7;
+            Xcoord >>= 7;
+
+            uint8_t tsz = Color ? 64 : 32;
+            uint8_t lsz = Color ?  8 :  4;
+
+            int32_t x, y = v_count - Ycoord;
+            //if(!RSFlag && VFlip)y ^= ()
+            int32_t ox = pa * -rcx + pb * (y - rcy) + (((ObjH/2)/4) << 10);
+            int32_t oy = pc * -rcx + pd * (y - rcy) + (((ObjV/2)/4) << 10);
+
+            uint32_t tys = (DISPCNT & (1 << 6)) ? ((ObjH/2)/4) * tsz : 1024;
+            uint32_t address = surf_addr + Xcoord * 4;
+
+            for(x=0; x < ObjH; x++, ox += pa, oy += pc, address += 4){
+                if(Xcoord + x < 0)continue;
+                if(Xcoord + x >= 240)break;
+
+                uint32_t vram_addr;
+                uint32_t pal_idx;
+
+                uint16_t tile_x = ox >> 11;
+                uint16_t tile_y = oy >> 11;
+                if(ox < 0 || tile_x >= ((ObjH/2)/4))continue;
+                if(oy < 0 || tile_y >= ((ObjV/2)/4))continue;
+
+                uint16_t chr_x = (ox >> 8) & 7;
+                uint16_t chr_y = (oy >> 8) & 7;
+                uint32_t chr_addr = chr_base + tile_y * tys + chr_y * lsz;
+                vram_addr = chr_addr + tile_x * 64 + chr_x;
+                pal_idx = MemRead8(0x6000000 + vram_addr);
+                printf("ox:%d, oy:%d\n", chr_x, chr_y);
+                uint32_t pal_addr = 0x100 | pal_idx | (!Color ? chr_pal * 16 : 0);
+                //printf("vram_addr : %x, address : %x, : pal_addr : %x\n", vram_addr, address, pal_addr);
+                if(pal_idx) *(uint32_t *)(screen + address) = ColorFormatTranslate(MemRead16(0x5000000 + pal_addr));
+            }
+        }*/
         //x2 = A(x1-x0) + B(y1-y0) + x0
         //y2 = C(x1-x0) + D(y1-y0) + y0
     }
@@ -329,13 +443,13 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
 
     if(reg_vcount >= VDRAW && reg_vcount < 228){
         reg_vblank = 1;
-        //DMA_Transfer(DMA_CH, 1);
+        DMA_Transfer(DMA_CH, 1);
     }
     else{reg_vblank = 0;}
 
     if(horizon > HBLANK_ZERO_CYCLE){
         reg_hblank = 1;
-        //DMA_Transfer(DMA_CH, 2);
+        DMA_Transfer(DMA_CH, 2);
     }
     else{
         reg_hblank = 0;
@@ -361,7 +475,7 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
             //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
-            SDL_Delay(10);
+            //SDL_Delay(10);
             reg_vcount = 0;
         }
         PPUMemWrite16(VCOUNT, reg_vcount);

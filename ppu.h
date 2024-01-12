@@ -65,6 +65,38 @@
 #define BLDY 0x4000054
 
 #define PALETTE_ADDR 0x5000200
+typedef int32_t s32;
+typedef volatile s32 fixed32;
+typedef int16_t s16;
+typedef volatile s16 fixed16;
+
+#define FIX_SHIFT 8
+#define FIX_SCALE 256
+#define FIX_SCALEF 256.0f
+
+static inline fixed32 fx_from_int(int d) {
+    return d << FIX_SHIFT;
+}
+
+static inline fixed32 fx_from_float(float f) {
+    return (fixed32)(f*FIX_SCALE);
+}
+
+static inline int fx_to_int(fixed32 fx) {
+    return fx / FIX_SCALE;
+}
+
+static inline float fx_to_float(fixed32 fx) {
+    return fx / FIX_SCALEF;
+}
+
+static inline fixed32 fx_multiply(fixed32 fa, fixed32 fb) {
+    return (fa*fb)>>FIX_SHIFT;
+}
+
+static inline fixed32 fx_division(fixed32 fa, fixed32 fb) {
+    return ((fa)*FIX_SCALE)/(fb);
+}
 
 struct OAM {
     uint16_t at0;
@@ -74,10 +106,10 @@ struct OAM {
 };
 
 struct OBJ_Affine {
-    uint16_t PA;
-    uint16_t PB;
-    uint16_t PC;
-    uint16_t PD;
+    fixed16 PA;
+    fixed16 PB;
+    fixed16 PC;
+    fixed16 PD;
 };
 
 struct BG_CNT {
