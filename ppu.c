@@ -230,12 +230,12 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
                                     /*if(spry == Ycoord || spry == (Ycoord + ObjV - 1) || sprx == Xcoord || sprx == (Xcoord + ObjH -1)){
                                         *(uint32_t *)(screen + (spry)*240*4 + (sprx)*4) = ColorFormatTranslate(0x0);
                                     }*/
-                                    /*if(tx < (Xcoord + ObjH/2) && ty < (Ycoord + ObjV/2) && tx >= Xcoord && ty >= Ycoord){
+                                    if(tx < (Xcoord + ObjH/2) && ty < (Ycoord + ObjV/2) && tx >= Xcoord && ty >= Ycoord){
                                         uint8_t data = MemRead8(TileAddr + 0x400*((ty - Ycoord)/8) + 0x40 * ((tx - Xcoord)/8) + ((ty - Ycoord) % 8) * 8 + ((tx - Xcoord) % 8));
                                         if(data != 0){
                                             *(uint32_t *)(screen + spry*240*4 + sprx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
                                         }
-                                    }*/
+                                    }
                                 }
                             }
                         }
