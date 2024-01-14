@@ -100,14 +100,14 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
     uint32_t TileAddr;
     int16_t ObjH, ObjV;
     //uint32_t Sprite[128];
-    for(uint32_t OAM_ADDR = OAM_ADDR_BASE;OAM_ADDR < (OAM_ADDR_BASE + (128*8));OAM_ADDR+=8){
+    for(uint32_t OAM_ADDR = OAM_ADDR_BASE + (128*8);OAM_ADDR >= (OAM_ADDR_BASE);OAM_ADDR-=8){
         OBJattr.at0 = MemRead16(OAM_ADDR);
         OBJattr.at1 = MemRead16(OAM_ADDR+0x2);
         OBJattr.at2 = MemRead16(OAM_ADDR+0x4);
         OBJattr.at3 = MemRead16(OAM_ADDR+0x8);
         Priority = (OBJattr.at2 >> 10) & 0x3;
         if(Priority != prio)continue;
-        if(OBJattr.at0 == 0 && OBJattr.at1 == 0 && OBJattr.at2 == 0 && OBJattr.at3 == 0)break;
+        if(OBJattr.at0 == 0 && OBJattr.at1 == 0 && OBJattr.at2 == 0 && OBJattr.at3 == 0)continue;
         RSFlag = ((OBJattr.at0 >> 8) & 0x1);
         if(RSFlag){
             RSparam = (OBJattr.at1 >> 9) & 0x1f;
@@ -215,6 +215,8 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
                     PB = affine->PB;
                     PC = affine->PC;
                     PD = affine->PD;
+                    int16_t tx;
+                    int16_t ty;
                     if(DoubleFlag){
                         rcy = Ycoord + (ObjV/4);
                         rcx = Xcoord + (ObjH/4);
@@ -223,18 +225,17 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
                         for(spry = Ycoord; spry < y_max; spry++){
                             for(sprx = Xcoord;sprx < x_max;sprx++){
                                 if(sprx < 240 && sprx >=0 && spry >= 0 && spry < 160){
-                                    int16_t tx = fx_multiply(PA,(sprx - (Xcoord + ObjH/2))) + fx_multiply(PB,(spry - (Ycoord + ObjV/2))) + rcx;
-                                    int16_t ty = fx_multiply(PC,(sprx - (Xcoord + ObjH/2))) + fx_multiply(PD,(spry - (Ycoord + ObjV/2))) + rcy;
+                                    tx = fx_multiply(PA,(sprx - (Xcoord + ObjH/2))) + fx_multiply(PB,(spry - (Ycoord + ObjV/2))) + rcx;
+                                    ty = fx_multiply(PC,(sprx - (Xcoord + ObjH/2))) + fx_multiply(PD,(spry - (Ycoord + ObjV/2))) + rcy;
                                     /*if(spry == Ycoord || spry == (Ycoord + ObjV - 1) || sprx == Xcoord || sprx == (Xcoord + ObjH -1)){
                                         *(uint32_t *)(screen + (spry)*240*4 + (sprx)*4) = ColorFormatTranslate(0x0);
                                     }*/
-                                    //if(OAM_ADDR == 0x7000030)printf("Xcoord:%d, Ycoord:%d, rcx:%d, rcy:%d, sprx:%d, spry:%d, tx:%d, ty:%d, tx-Xcoord:%d, ty-Ycoord:%d\n", Xcoord, Ycoord, rcx, rcy, sprx, spry, tx, ty, tx-Xcoord, ty-Ycoord);
-                                    if(tx < (Xcoord + ObjH/2) && ty < (Ycoord + ObjV/2) && tx >= Xcoord && ty >= Ycoord){
+                                    /*if(tx < (Xcoord + ObjH/2) && ty < (Ycoord + ObjV/2) && tx >= Xcoord && ty >= Ycoord){
                                         uint8_t data = MemRead8(TileAddr + 0x400*((ty - Ycoord)/8) + 0x40 * ((tx - Xcoord)/8) + ((ty - Ycoord) % 8) * 8 + ((tx - Xcoord) % 8));
                                         if(data != 0){
                                             *(uint32_t *)(screen + spry*240*4 + sprx*4) = ColorFormatTranslate(MemRead16(PALETTE_ADDR + 0x2 * data));
                                         }
-                                    }
+                                    }*/
                                 }
                             }
                         }
@@ -243,8 +244,8 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
                         for(spry = Ycoord; spry < y_max; spry++){
                             for(sprx = Xcoord;sprx < x_max;sprx++){
                                 if(sprx < 240 && sprx >=0 && spry >= 0 && spry < 160){
-                                    int16_t tx = fx_multiply(PA,(sprx - rcx)) + fx_multiply(PB,(spry - rcy)) + rcx;
-                                    int16_t ty = fx_multiply(PC,(sprx - rcx)) + fx_multiply(PD,(spry - rcy)) + rcy;
+                                    tx = fx_multiply(PA,(sprx - rcx)) + fx_multiply(PB,(spry - rcy)) + rcx;
+                                    ty = fx_multiply(PC,(sprx - rcx)) + fx_multiply(PD,(spry - rcy)) + rcy;
                                     if(tx < (Xcoord + ObjH) && ty < (Ycoord + ObjV) && tx >= Xcoord && ty >= Ycoord){
                                         uint8_t data = MemRead8(TileAddr + 0x400 * ((ty - Ycoord)/8) + 0x40 * ((tx - Xcoord)/8) + ((ty - Ycoord) % 8) * 8 + ((tx - Xcoord) % 8));
                                         if(data != 0){
@@ -372,10 +373,10 @@ void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* rende
     else{
         //DrawBG(renderer);
         //printf("render obj\n");
-        //DrawSprite(renderer, 3, reg_vcount, screen);
+        DrawSprite(renderer, 3, reg_vcount, screen);
         DrawSprite(renderer, 2, reg_vcount, screen);
-        //DrawSprite(renderer, 1, reg_vcount, screen);
-        //DrawSprite(renderer, 0, reg_vcount, screen);
+        DrawSprite(renderer, 1, reg_vcount, screen);
+        DrawSprite(renderer, 0, reg_vcount, screen);
     }
 }
 
