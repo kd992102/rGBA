@@ -107,6 +107,7 @@ int main(int argc, char *argv[]){
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+    //getchar();
     for(;;){
         if(cpu->Halt == 0){
             cpu->Cmode = ChkCPUMode();

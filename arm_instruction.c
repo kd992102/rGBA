@@ -168,12 +168,6 @@ void ArmDataProc(uint32_t inst){
                 break;
             }
             else{CPSRUpdate(LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
-            /*if(((cpu->Reg[Rn] & exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
-            else{cpu->CPSR &= 0x7fffffff;}
-            if(!(cpu->Reg[Rn] & exOpr))cpu->CPSR |= 0x40000000;//Z flag
-            else{cpu->CPSR &= 0xbfffffff;}
-            if(cpu->carry_out)cpu->CPSR |= 0x20000000;
-            else{cpu->CPSR &= 0xffffffff;}*/
             break;
         case TEQ://logical
                 //EOR
@@ -182,12 +176,6 @@ void ArmDataProc(uint32_t inst){
                 break;
             }
             else{CPSRUpdate(LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
-            /*if(((cpu->Reg[Rn] ^ exOpr) >> 31))cpu->CPSR |= 0x80000000;//N flag
-            else{cpu->CPSR &= 0x7fffffff;}
-            if(!(cpu->Reg[Rn] ^ exOpr))cpu->CPSR |= 0x40000000;//Z flag
-            else{cpu->CPSR &= 0xbfffffff;}
-            if(cpu->carry_out)cpu->CPSR |= 0x20000000;
-            else{cpu->CPSR &= 0xffffffff;}*/
             break;
         case CMP://arith
                 //SUB
@@ -394,6 +382,7 @@ void ArmMULL(uint32_t inst){
     }
 }
 void ArmSWI(uint32_t inst){
+    printf("SWI\n");
     uint32_t swi_num = inst & 0xffffff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
     cpu->dMode = SVC;
