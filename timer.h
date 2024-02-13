@@ -25,6 +25,4 @@ struct TimerControl {
     uint8_t TM_ENABLE;
 };
 
-uint16_t TM_CNT[4];
-uint16_t * ReadTimer(uint16_t *Timer);
-void Timer_Clock(uint64_t cycles);
+void Timer_Clock(uint32_t cycle);

@@ -7,6 +7,7 @@
 #include "arm7tdmi.h"
 #include "dma.h"
 #include "gba.h"
+#include "timer.h"
 #include "ppu.h"
 
 //struct gba_rom *gba_rom;
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]){
             getchar();
             //exit(1);
         }*/
+        Timer_Clock(cpu->cycle);
         cpu->cycle = 0;
     }
     Release_GbaMem();

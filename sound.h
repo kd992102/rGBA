@@ -1,0 +1,1 @@
+#define SOUNDCNT_H 0x4000082
