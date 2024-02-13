@@ -129,7 +129,7 @@ struct OBJ_Affine * LoadOBJAffine(struct OBJ_Affine * affine, uint16_t GroupNum)
 uint32_t ColorFormatTranslate(uint16_t BGR555);
 
 void DrawBG(SDL_Renderer *renderer);
-void ScalePixel(void *coord, uint8_t scale, uint8_t ox, uint8_t oy);
+void DrawOBJwindow(SDL_Renderer* renderer, uint16_t vcount, void *screen);
 void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen);
 void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);

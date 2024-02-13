@@ -5,6 +5,7 @@
 #include "arm7tdmi.h"
 #include "arm_instruction.h"
 #include "thumb_instruction.h"
+#include "timer.h"
 //EQ = 0,NE,CS,CC,MI,PL,VS,VC,HI,LS,GE,LT,LE
 
 extern Gba_Cpu *cpu;
