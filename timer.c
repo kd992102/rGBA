@@ -22,6 +22,7 @@ void Timer_Clock(uint32_t cycle){
     TM_CNT[1] = MemRead16(TM1CNT);
     TM_CNT[2] = MemRead16(TM2CNT);
     TM_CNT[3] = MemRead16(TM3CNT);
+
     for(idx = 0; idx < 4; idx++){
         //If TM_REG Not enable, continue
         if(!(TM_CNT[idx] & TMR_ENB)){
