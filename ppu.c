@@ -587,7 +587,7 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
             //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
-            SDL_Delay(10);
+            //SDL_Delay(10);
             //getchar();
             reg_vcount = 0;
         }

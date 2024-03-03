@@ -29,14 +29,17 @@ io.o: io.c
 gba.o: gba.c
 	$(CC) -I $(INCLUDE) $(CFLAGS) -c gba.c
 
+sound.o: sound.c
+	$(CC) -I $(INCLUDE) $(CFLAGS) -c sound.c
+
 dma.o: dma.c
 	$(CC) -I $(INCLUDE) $(CFLAGS) -c dma.c
 
 timer.o: timer.c
 	$(CC) -I $(INCLUDE) $(CFLAGS) -c timer.c
 
-main.out: main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o dma.o timer.o
-	$(CC) main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o dma.o timer.o -lmingw32 -lSDL2main -lSDL2 -o main
+main.out: main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o sound.o dma.o timer.o
+	$(CC) main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o sound.o dma.o timer.o -lmingw32 -lSDL2main -lSDL2 -o main
 
 clean:
-	del -fR main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o dma.o timer.o
+	del -fR main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o dma.o timer.o sound.o

@@ -84,7 +84,7 @@ enum IRQ_VECTOR {
 uint8_t CheckCond();
 void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
 
-
+void ErrorHandler(Gba_Cpu *cpu);
 void RecoverReg(uint8_t Cmode);
 uint8_t ChkCPUMode();
 uint32_t CpuExecute(uint32_t inst);
