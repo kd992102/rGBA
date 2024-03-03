@@ -103,6 +103,10 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
     //cpu->carry_out = 0;
 }
 
+void ErrorHandler(Gba_Cpu *cpu){
+    
+}
+
 void RecoverReg(uint8_t Cmode){
     switch(Cmode){
         case 0x11:

@@ -13,6 +13,8 @@
         "stdint.h": "c",
         "io.h": "c",
         "stdio.h": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "ppu.h": "c",
+        "dma.h": "c"
     }
 }

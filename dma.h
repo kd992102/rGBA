@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "stdint.h"
 #define DMA0SAD 0x40000B0
 #define DMA1SAD 0x40000BC
 #define DMA2SAD 0x40000C8
@@ -50,4 +50,5 @@ struct DMA_CHANNEL_ARRAY{
 typedef struct DMA_CHANNEL_ARRAY DMA;
 
 void DMA_Transfer(DMA DMA_CH, uint8_t TimeMode);
+void DMA_Transfer_fifo(DMA DMA_CH, uint8_t ch);
 DMA DMA_CHANNEL_READ(DMA DMA_CH);

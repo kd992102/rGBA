@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "memory.h"
 #include "io.h"
+#include "sound.h"
 #include "dma.h"
 
 extern GbaMem *Mem;
@@ -94,5 +95,37 @@ void DMA_Transfer(DMA DMA_CH, uint8_t TimeMode){
         }
 
         DMA_CH.DMAX[idx].DMACNT &= ~DMA_ENABLE;
+    }
+}
+
+void DMA_Transfer_fifo(DMA DMA_CH, uint8_t ch){
+    //printf("DMA transfer FIFO\n");
+    switch(ch){
+        case 1:
+            DMA_CH.DMAX[1].DMACNT = MemRead32(DMA1CNT);
+            DMA_CH.DMAX[1].DMASAD = MemRead32(DMA1SAD);
+            DMA_CH.DMAX[1].DMADAD = MemRead32(DMA1DAD);
+            break;
+        case 2:
+            DMA_CH.DMAX[2].DMACNT = MemRead32(DMA2CNT);
+            DMA_CH.DMAX[2].DMASAD = MemRead32(DMA2SAD);
+            DMA_CH.DMAX[2].DMADAD = MemRead32(DMA2DAD);
+            break;
+    }
+    if(((DMA_CH.DMAX[ch].DMACNT >> 31) & DMA_ENABLE) || ((DMA_CH.DMAX[ch].DMACNT >> 28) & 3) != 3){
+        return;
+    }
+    MemWrite32(DMA_CH.DMAX[ch].DMADAD, MemRead32(DMA_CH.DMAX[ch].DMASAD));
+
+    if(ch == 1)fifo_a_copy();
+    else{fifo_b_copy();}
+        //printf("DMA transfer FIFO\n");
+    switch((DMA_CH.DMAX[ch].DMACNT >> 23) & 3){
+        case 0:DMA_CH.DMAX[ch].DMASAD += 4;break;
+        case 1:DMA_CH.DMAX[ch].DMASAD -= 4;break;
+    }
+
+    if((DMA_CH.DMAX[ch].DMACNT >> 16) & (1 << 14)){
+            //DMA IRQ trigger
     }
 }
