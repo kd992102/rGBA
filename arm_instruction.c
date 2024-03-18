@@ -72,6 +72,7 @@ void ArmPSRT(uint32_t inst){
     uint8_t Rm = (inst & 0xf);
     uint32_t Opr = (inst & 0xfff);
     uint32_t res;
+    cpu->DebugFunc = 0;
     //printf("Cycle:%d, PSRT\n", cpu->cycle);
     if(bit){
         //MSR
@@ -101,6 +102,7 @@ void ArmDataProc(uint32_t inst){
     uint32_t Opr2 = (inst) & 0xfff;
     uint32_t exOpr;
     uint8_t S_bit = (inst >> 20) & 0x1;
+    cpu->DebugFunc = 0;
     exOpr = BarrelShifter(Opr2, (inst >> 25) & 0x1, exOpr);
     switch(Opcode){
         case AND://logical
@@ -114,7 +116,6 @@ void ArmDataProc(uint32_t inst){
             if(Rd == PC){cpu->cycle += 2;}
             break;
         case SUB://arith
-            //if(cpu->cycle_sum > 1730000)printf("SPSR:%x, CPSR:%x, R%d:IRQ:%x, USER:%x\n", cpu->SPSR_irq, cpu->CPSR, Rn, cpu->Reg_irq[1],cpu->Reg[Rn]);
             cpu->Reg[Rd] = cpu->Reg[Rn] - exOpr;
             if(S_bit)CPSRUpdate(A_SUB, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC){
@@ -215,6 +216,7 @@ void ArmDataProc(uint32_t inst){
 //OK
 void ArmBranch(uint32_t inst){
     uint32_t offset;
+    cpu->DebugFunc = 10;
     if((inst >> 23) & 0x1)offset = (inst << 2) | 0xff000000;
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
 
@@ -233,6 +235,7 @@ void ArmBranch(uint32_t inst){
 
 void ArmBX(uint32_t inst){
     uint8_t Rn = inst & 0xf;
+    cpu->DebugFunc = 4;
     //if(Rn == PC)Undefined(cpu);//Exception
     //cpu->Reg[PC] = cpu->Reg[Rn];
     cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
@@ -259,6 +262,7 @@ void ArmSWP(uint32_t inst){
     uint32_t Rd = (inst >> 12) & 0xf;
     uint32_t Rm = inst & 0xf;
     uint32_t tmp = 0;
+    cpu->DebugFunc = 3;
     if(B_bit){
         //byte
         cpu->Reg[Rd] = cpu->Reg[Rd] & 0xff;
@@ -286,6 +290,7 @@ void ArmMUL(uint32_t inst){
     uint8_t Rs = (inst >> 8) & 0xf;
     uint8_t Rm = inst & 0xf;
     uint8_t m = 0;
+    cpu->DebugFunc = 1;
     if(((cpu->Reg[Rs] >> 8) & 0xffffff) == 0x0 || ((cpu->Reg[Rs] >> 8) & 0xffffff) == 0xffffff)m = 1;
     else if(((cpu->Reg[Rs] >> 16) & 0xffff) == 0x0 || ((cpu->Reg[Rs] >> 16) & 0xffff) == 0xffff)m = 2;
     else if(((cpu->Reg[Rs] >> 24)) & 0xff == 0x0 || ((cpu->Reg[Rs] >> 24) & 0xff) == 0xff)m = 3;
@@ -314,7 +319,7 @@ void ArmMULL(uint32_t inst){
     uint8_t Rs = (inst >> 8) & 0xf;
     uint8_t Rm = inst & 0xf;
     uint8_t m = 0;
-
+    cpu->DebugFunc = 2;
     if(Acc){
         //MLA
         if(U_bit==0){
@@ -382,7 +387,7 @@ void ArmMULL(uint32_t inst){
     }
 }
 void ArmSWI(uint32_t inst){
-    printf("SWI\n");
+    cpu->DebugFunc = 11;
     uint32_t swi_num = inst & 0xffffff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
     cpu->dMode = SVC;
@@ -409,6 +414,7 @@ void ArmSDT(uint32_t inst){
     uint16_t Offset = (inst) & 0xfff;
     uint32_t Opr;
     uint8_t shift;
+    cpu->DebugFunc = 7;
     if(Imm){
         shift = (Offset >> 7) & 0xf;
         switch(((Offset >> 5) & 0x3)){
@@ -488,6 +494,7 @@ void ArmSDTS(uint32_t inst){
     uint8_t Rm = inst & 0xf;
     uint32_t Opr;
     uint32_t Offset;
+    cpu->DebugFunc = 5;
     if(Imm){Offset = (((inst >> 8) & 0xf) << 4) | (inst & 0xf);}
     else{Offset = cpu->Reg[Rm];}
     Opr = cpu->Reg[Rn];
@@ -552,6 +559,7 @@ void ArmBDT(uint32_t inst){
     uint8_t shift = 0;
     uint32_t RWaddr = cpu->Reg[Rn];
     uint8_t n = 0;
+    cpu->DebugFunc = 9;
     if(L_bit){
         //LDM
         for(shift = 0;shift < 16;shift++){

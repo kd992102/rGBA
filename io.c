@@ -56,11 +56,15 @@ uint32_t MemoryAddrReloc(uint32_t addr){
             if((addr ^ 0xD000000) < 0x1000000)return (uint32_t)((Mem->Game_ROM3) + (addr - GAMEROM3_ADDR_BASE));
             break;
         case 0xE000000:
-            printf("Inst:%x, %x,SDRAM\n", cpu->CurrentInst, cpu->Reg[PC] - (cpu->InstOffset * 2));
-            if((addr ^ GAMEROM_SDRAM_BASE) < GAME_SRAM_MEM_SIZE)return (uint32_t)(Mem->Game_SRAM) + (addr - GAMEROM_SDRAM_BASE);
+            //ErrorHandler(cpu);
+            if((addr ^ GAMEROM_SDRAM_BASE) < GAME_SRAM_MEM_SIZE){
+                //printf("In if %x\n", (addr));
+                return (uint32_t)(Mem->Game_SRAM) + (addr - GAMEROM_SDRAM_BASE);
+            }
             break;
         default:
             printf("cycle %lld Memory Address %08x Not Used", cpu->cycle_sum, addr);
+            ErrorHandler(cpu);
             return 1;
     }
 }
