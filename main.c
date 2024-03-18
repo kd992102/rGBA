@@ -112,9 +112,17 @@ int main(int argc, char *argv[]){
     for(;;){
         if(cpu->Halt == 0){
             cpu->Cmode = ChkCPUMode();
+            if(cpu->cycle_sum > 75857200){
+                printf("%x, %d, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
+                //exit(0);
+            }
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
-
+            if(cpu->cycle_sum > 75857350){
+                printf("%x, %d, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
+                exit(0);
+            }
+            //if(stderr != NULL)fprintf(stderr, "exit\n");
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
             RecoverReg(cpu->Cmode);

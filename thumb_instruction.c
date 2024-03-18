@@ -12,6 +12,7 @@ void ThumbMULLS(uint16_t inst){
     uint8_t Rb = (inst >> 8) & 0x7;
     uint8_t RegList = (inst) & 0xff;
     uint8_t n = 0;
+    cpu->DebugFunc = 25;
     if(L_bit){
         for(int i=0;i<8;i++){
             if((RegList >> i) & 0x1){
@@ -36,6 +37,7 @@ void ThumbMULLS(uint16_t inst){
 void ThumbCondB(uint16_t inst){
     uint8_t cond = (inst >> 8) & 0xf;
     int8_t Offset = inst & 0xff;
+    cpu->DebugFunc = 26;
     cpu->Cond = cond;
     if(CheckCond(cpu)){
         cpu->Reg[PC] = cpu->Reg[PC] + ((int8_t)Offset) * 2;
@@ -56,6 +58,7 @@ void ThumbCondB(uint16_t inst){
 }
 void ThumbSWI(uint16_t inst){
     uint32_t swi_num = inst & 0xff;
+    cpu->DebugFunc = 27;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x2;
     cpu->CpuMode = ARM_MODE;
     cpu->dMode = SVC;
@@ -72,6 +75,7 @@ void ThumbSWI(uint16_t inst){
 }
 void ThumbUCOND(uint16_t inst){
     uint32_t Offset = inst & 0x7ff;
+    cpu->DebugFunc = 28;
     Offset = Offset << 1;
     if(((Offset >> 11) & 0x1))Offset = Offset | 0xfffff000;
     cpu->Reg[PC] = cpu->Reg[PC] + Offset;
@@ -85,6 +89,7 @@ void ThumbLONGBL(uint16_t inst){
     uint8_t H = (inst >> 11) & 0x1;
     uint32_t Offset = ((inst) & 0x7ff);
     uint32_t tmp = 0;
+    cpu->DebugFunc = 29;
     //printf("inst:%08x\n", inst);
     //printf("PC:%08x, Offset:%08x\n", cpu->Reg[PC], Offset);
     if(H == 0){
@@ -113,6 +118,7 @@ void ThumbLSH(uint16_t inst){
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
     uint32_t addr = cpu->Reg[Rb] + (Offset << 1);
+    cpu->DebugFunc = 20;
     if(L_bit){
         //LDR
         cpu->Reg[Rd] = MemRead16(cpu->Reg[Rb] + (Offset << 1));
@@ -133,6 +139,7 @@ void ThumbSPLS(uint16_t inst){
     uint8_t L_bit = (inst >> 11) & 0x1;
     uint8_t Rd = (inst >> 8) & 0x7;
     uint16_t Word = (inst) & 0xff;
+    cpu->DebugFunc = 21;
     if(L_bit){
         //LDR
         cpu->Reg[Rd] = MemRead32(cpu->Reg[SP] + (Word << 2));
@@ -153,6 +160,7 @@ void ThumbLADDR(uint16_t inst){
     uint8_t SP_bit = (inst >> 11) & 0x1;
     uint8_t Rd = (inst >> 8) & 0x7;
     uint16_t Word = (inst) & 0xff;
+    cpu->DebugFunc = 22;
     if(SP_bit){
         //
         cpu->Reg[Rd] = cpu->Reg[SP] + (Word << 2);
@@ -171,6 +179,7 @@ void ThumbLADDR(uint16_t inst){
 void ThumbADDSP(uint16_t inst){
     uint8_t S_bit = (inst >> 7) & 0x1;
     uint8_t Word = (inst) & 0x7f;
+    cpu->DebugFunc = 23;
     if(S_bit){
         //
         cpu->Reg[SP] = cpu->Reg[SP] - (Word << 2);
@@ -185,6 +194,7 @@ void ThumbPPREG(uint16_t inst){
     uint8_t R_bit = (inst >> 8) & 0x1;
     uint8_t RegList = (inst) & 0xff;
     uint8_t n = 0;
+    cpu->DebugFunc = 24;
     if(L_bit){
         //POP
         for(int i=0;i<8;i++){
@@ -228,6 +238,7 @@ void ThumbALU(uint16_t inst){
     uint8_t Rd = inst & 0x7;
     uint8_t m = 0;
     uint32_t tmp;
+    cpu->DebugFunc = 15;
     tmp = cpu->Reg[Rd];
     switch(Op){
         case 0:
@@ -326,6 +337,7 @@ void ThumbBX(uint16_t inst){
     uint8_t H2 = (inst >> 6) & 0x1;
     uint8_t Rs = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
+    cpu->DebugFunc = 16;
     if(H2)Rs += 8;
     if(H1)Rd += 8;
     switch(Op){
@@ -369,6 +381,7 @@ void ThumbBX(uint16_t inst){
 void ThumbPCLOAD(uint16_t inst){
     uint8_t Rd = (inst >> 8) & 0x7;
     uint8_t Word = inst & 0xff;
+    cpu->DebugFunc = 17;
     cpu->Reg[Rd] = MemRead32((cpu->Reg[PC] & 0xfffffffd) + (Word << 2));
     cpu->cycle += 2;
     if(Rd == PC){
@@ -384,6 +397,7 @@ void ThumbLSREG(uint16_t inst){
     uint8_t Ro = (inst >> 6) & 0x7;
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
+    cpu->DebugFunc = 18;
     if(L_bit){
         //LDR
         if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Ro] + cpu->Reg[Rb]);
@@ -409,6 +423,7 @@ void ThumbLSBH(uint16_t inst){
     uint8_t Ro = (inst >> 6) & 0x7;
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
+    cpu->DebugFunc = 20;
     if(H_bit == 0 && S_bit == 0){
         MemWrite16(cpu->Reg[Ro] + cpu->Reg[Rb], (uint16_t)(cpu->Reg[Rd] & 0xffff));
         cpu->cycle += 1;
@@ -435,6 +450,7 @@ void ThumbLSIMM(uint16_t inst){
     uint8_t Offset = (inst >> 6) & 0x1f;
     uint8_t Rb = (inst >> 3) & 0x7;
     uint8_t Rd = (inst) & 0x7;
+    cpu->DebugFunc = 19;
     if(L_bit){
         //LDR
         if(B_bit)cpu->Reg[Rd] = MemRead8(cpu->Reg[Rb] + Offset);
@@ -462,6 +478,7 @@ void ThumbAS(uint16_t inst){
     uint8_t Rs = (inst >> 3) & 0x7;
     uint8_t Rd = inst & 0x7;
     uint32_t tmp = 0;
+    cpu->DebugFunc = 13;
     tmp = cpu->Reg[Rs];
     //printf("Rn %d %08x, Rd %d %08x, Rs %d %08x\n", Rn, cpu->Reg[Rn], Rd, (cpu->Reg[Rs]) + (cpu->Reg[Rn]), Rs, cpu->Reg[Rs]);
     switch((Op << 1) | I_bit){
@@ -489,6 +506,7 @@ void ThumbMVREG(uint16_t inst){
     uint8_t Offset = (inst >> 6) & 0x1f;
     uint8_t Rs = (inst >> 3) & 0x7;
     uint8_t Rd = inst & 0x7;
+    cpu->DebugFunc = 12;
     switch(Op){
         case 0:
             //LSL
@@ -516,6 +534,7 @@ void ThumbIMM(uint16_t inst){
     uint8_t Rd = (inst >> 8) & 0x7;
     uint8_t Offset = (inst) & 0xff;
     uint32_t tmp = 0;
+    cpu->DebugFunc = 14;
     switch(Op){
         case 0:
         //mov

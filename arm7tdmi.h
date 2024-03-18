@@ -60,6 +60,7 @@ typedef struct arm7tdmi{
     uint32_t Cmode;
     uint32_t CurrentInst;
     uint8_t Halt;
+    uint8_t DebugFunc;
 } Gba_Cpu;
 
 typedef enum IRQ_VECTOR IrqVec;

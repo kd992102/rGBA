@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "memory.h"
 #include "io.h"
@@ -104,7 +105,8 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
 }
 
 void ErrorHandler(Gba_Cpu *cpu){
-    
+    printf("Inst:%x, Current:%x, Func:%d\n", cpu->CurrentInst, cpu->fetchcache[2], cpu->DebugFunc);
+    exit(1);
 }
 
 void RecoverReg(uint8_t Cmode){
@@ -344,9 +346,7 @@ void ThumbModeDecode(uint16_t inst){
             }
             break;
         case 6:
-            //printf("case 6\n");
             if(((inst >> 12) & 0x1)){
-                //printf("Hey inst:%08x\n", inst);
                 if(((inst >> 8) & 0xf) == 0xf)ThumbSWI(inst);
                 else{
                     //printf("CondB\n");
