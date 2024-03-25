@@ -17,8 +17,11 @@ void InitCpu(uint32_t BaseAddr){
     
     cpu->Reg[PC] = BaseAddr + 0x8;
     cpu->fetchcache[2] = MemRead32(BaseAddr);
+    cpu->CurrentInstAddr[2] = BaseAddr;
     cpu->fetchcache[1] = MemRead32(BaseAddr + 0x4);
+    cpu->CurrentInstAddr[1] = BaseAddr + 0x4;
     cpu->fetchcache[0] = MemRead32(BaseAddr + 0x8);
+    cpu->CurrentInstAddr[0] = BaseAddr + 0x8;
 }
 
 void Reset(){

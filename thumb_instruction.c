@@ -93,6 +93,7 @@ void ThumbLONGBL(uint16_t inst){
     //printf("inst:%08x\n", inst);
     //printf("PC:%08x, Offset:%08x\n", cpu->Reg[PC], Offset);
     if(H == 0){
+        //printf("%d->%x, %d, %x, %ld\n", H, cpu->CurrentInst, cpu->DebugFunc, cpu->CurrentInstAddr[2], cpu->cycle_sum);
         Offset = Offset << 12;
         if((Offset >> 22) & 0x1 == 1)cpu->Reg[LR] = cpu->Reg[PC] - (((~Offset) & 0x3fffff) + 1);
         else{
@@ -100,6 +101,7 @@ void ThumbLONGBL(uint16_t inst){
         }
     }
     else{
+        //printf("%d->%x, %d, %x, %ld\n", H, cpu->CurrentInst, cpu->DebugFunc, cpu->Reg[PC], cpu->cycle_sum);
         Offset = Offset << 1;
         tmp = cpu->Reg[PC] - 0x2;
         cpu->Reg[PC] = cpu->Reg[LR] + (Offset);

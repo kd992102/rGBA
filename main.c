@@ -111,17 +111,21 @@ int main(int argc, char *argv[]){
     //getchar();
     for(;;){
         if(cpu->Halt == 0){
-            cpu->Cmode = ChkCPUMode();
-            if(cpu->cycle_sum > 75857200){
-                printf("%x, %d, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
-                //exit(0);
+            if(cpu->fetchcache[2] == 0xfffc){
+                printf("Mode:%d, %x, %d, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
+                break;
             }
+            cpu->Cmode = ChkCPUMode();
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
+            /*if(cpu->cycle_sum > 2000000 && cpu->cycle_sum < 2000000){
+                printf("%x, %d, %x, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->Reg[PC], cpu->cycle_sum);
+                //exit(0);
+            }
             if(cpu->cycle_sum > 75857350){
                 printf("%x, %d, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
                 exit(0);
-            }
+            }*/
             //if(stderr != NULL)fprintf(stderr, "exit\n");
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
@@ -143,7 +147,7 @@ int main(int argc, char *argv[]){
         //0xa0 cycle:818 -> OK
         //0xbb4 tst r0,0xe000000
         //1730918, 515011
-        /*if((cpu->Reg[PC] - (cpu->InstOffset * 2)) > 0x8000000){
+        /*if(cpu->cycle_sum > 2007400){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);
