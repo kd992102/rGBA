@@ -59,6 +59,7 @@ typedef struct arm7tdmi{
     uint64_t cycle_sum;
     uint32_t Cmode;
     uint32_t CurrentInst;
+    uint32_t CurrentInstAddr[3];
     uint8_t Halt;
     uint8_t DebugFunc;
 } Gba_Cpu;

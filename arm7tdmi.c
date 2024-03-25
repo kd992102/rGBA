@@ -369,10 +369,25 @@ void ThumbModeDecode(uint16_t inst){
 }
 
 void PreFetch(uint32_t Addr){
+    if(cpu->fetchcache[0] == 0xfffc){
+        printf("Mode:%d, %x, %d, %x, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, Addr, cpu->cycle_sum);
+    }
     cpu->fetchcache[2] = cpu->fetchcache[1];
+    cpu->CurrentInstAddr[2] = cpu->CurrentInstAddr[1];
     cpu->fetchcache[1] = cpu->fetchcache[0];
+    cpu->CurrentInstAddr[1] = cpu->CurrentInstAddr[0];
+    if(Addr == 0x350){
+        //printf("Mode:%d, %x, %d, %x, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->CurrentInstAddr[2], cpu->cycle_sum);
+        //exit(1);
+    }
     if(cpu->dMode == ARM_MODE)cpu->fetchcache[0] = MemRead32(Addr);
-    else{cpu->fetchcache[0] = MemRead16(Addr);}
+    else{
+        cpu->fetchcache[0] = MemRead16(Addr);
+        if(cpu->fetchcache[0] == 0xfffc){
+            printf("Mode:%d, %x, %d, %x, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->CurrentInstAddr[2], cpu->cycle_sum);
+        }
+    }
+    cpu->CurrentInstAddr[0] = Addr;
     cpu->cycle += 1;
 }
 
