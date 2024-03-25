@@ -147,7 +147,7 @@ int main(int argc, char *argv[]){
         //0xa0 cycle:818 -> OK
         //0xbb4 tst r0,0xe000000
         //1730918, 515011
-        /*if(cpu->cycle_sum > 2007400){
+        if(cpu->cycle_sum > 2007350){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]){
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();
             //exit(1);
-        }*/
+        }
         Timer_Clock(cpu->cycle);
         cpu->cycle = 0;
     }
