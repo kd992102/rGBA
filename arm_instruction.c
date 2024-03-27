@@ -221,7 +221,9 @@ void ArmBranch(uint32_t inst){
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
 
     if((inst >> 24) & 0x1){//Link Bit
+        printf("Before PC:%x\n", cpu->Reg[PC]);
         cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
+        printf("After LR:%x\n", cpu->Reg[LR]);
     }
     //printf("old PC : %08x\n", cpu->Reg[PC]);
     cpu->Reg[PC] = cpu->Reg[PC] + (int32_t)offset;

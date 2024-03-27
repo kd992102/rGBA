@@ -109,45 +109,44 @@ int main(int argc, char *argv[]){
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
     //getchar();
+
+    //main loop
     for(;;){
         if(cpu->Halt == 0){
-            if(cpu->fetchcache[2] == 0xfffc){
+            /*if(cpu->fetchcache[2] == 0xfffc){
                 printf("Mode:%d, %x, %d, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
                 break;
-            }
+            }*/
             cpu->Cmode = ChkCPUMode();
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
-            /*if(cpu->cycle_sum > 2000000 && cpu->cycle_sum < 2000000){
-                printf("%x, %d, %x, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->Reg[PC], cpu->cycle_sum);
-                //exit(0);
-            }
-            if(cpu->cycle_sum > 75857350){
-                printf("%x, %d, %ld\n", cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
-                exit(0);
-            }*/
-            //if(stderr != NULL)fprintf(stderr, "exit\n");
+
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-            RecoverReg(cpu->Cmode);
+            
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
+            //cpu->cycle_sum > 2007350
+            if(cpu->cycle_sum >= 1731262){
+                CpuStatus();
+                printf("cycle:%ld, 0x3007F9C:%x\n", cpu->cycle_sum, MemRead32(0x3007F9C));
+                printf("IRQ LR:%x\n", cpu->Reg_irq[1]);
+                getchar();
+            }
+            RecoverReg(cpu->Cmode);
         }
         IRQ_checker(cpu->CPSR);
+        //if Halt enable
         if(cpu->Halt == 1){
             cpu->cycle = 1;
         }
+        //According to the instruction cycles update the PPU 
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
             if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
         }
-        /*0x6C6->, 0x10E4->535536 0x1000->879168, 1404563, 1405107, 1731063->0x18, 1731857 interrupt*/
-        //cpu->cycle_sum >= 1731891 (0x733b)
-        //CurrentInst == 0xE5CC3208,CurrentInst == 0x8118
-        //0xa0 cycle:818 -> OK
-        //0xbb4 tst r0,0xe000000
-        //1730918, 515011
-        if(cpu->cycle_sum > 2007350){
+
+        /*if(cpu->cycle_sum > 2007350){
             CpuStatus();
             printf("Cycle:%d\n", cpu->cycle_sum);
             printf("Current Instruction:%x\n", cpu->CurrentInst);
@@ -163,7 +162,7 @@ int main(int argc, char *argv[]){
             printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
             getchar();
             //exit(1);
-        }
+        }*/
         Timer_Clock(cpu->cycle);
         cpu->cycle = 0;
     }
