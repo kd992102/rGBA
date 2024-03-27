@@ -471,24 +471,12 @@ void IRQ_handler(){
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
     cpu->CPSR = (cpu->CPSR & 0xffffffc0) | (0x12);
-    //printf("interrupt CPSR->%x\n", cpu->CPSR);
     cpu->Reg_irq[1] = cpu->Reg[PC];//next instruction
     cpu->Reg[PC] = 0x18;
-    //printf("PC:%x, IRQ_LR:%x\n", cpu->Reg[PC], cpu->Reg_irq[1]);
     cpu->fetchcache[2] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x8);
     cpu->Reg[PC] += 0x8;
     cpu->Halt = 0;
-    //cpu->cycle += 3;//2S+1N
-    /*cpu->Cmode = ChkCPUMode();
-    cpu->CurrentInst = cpu->fetchcache[2];
-    CpuExecute(cpu->fetchcache[2]);
-
-    if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
-    else{cpu->InstOffset = 0x4;}
-
-    RecoverReg(cpu->Cmode);
-    cpu->Reg[PC] += cpu->InstOffset;
-    PreFetch(cpu->Reg[PC]);//fetch new instruction*/
+    printf("cycle:%ld\n", cpu->cycle_sum);
 }
