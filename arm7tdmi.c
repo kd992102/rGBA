@@ -105,7 +105,8 @@ void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t p
 }
 
 void ErrorHandler(Gba_Cpu *cpu){
-    printf("Inst:%x, Current:%x, Func:%d\n", cpu->CurrentInst, cpu->fetchcache[2], cpu->DebugFunc);
+    printf("[Exception Occured]->Offset:%x, Inst:%x, Current:%x, Func:%d, Cycle:%ld\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, cpu->fetchcache[2], cpu->DebugFunc, cpu->cycle_sum);
+    CpuStatus();
     exit(1);
 }
 
@@ -249,6 +250,8 @@ uint8_t ChkCPUMode(){
             //System
             cpu->CpuMode = SYSTEM;
             return SYSTEM;
+        default:
+            ErrorHandler(cpu);
     }
 }
 
@@ -289,9 +292,9 @@ void ArmModeDecode(uint32_t inst){
             case 3:
                 ArmSWI(inst);
                 break;
+            default:
+                ErrorHandler(cpu);
         }
-    }
-    else{
     }
 }
 
@@ -365,6 +368,8 @@ void ThumbModeDecode(uint16_t inst){
                 ThumbUCOND(inst);
             }
             break;
+        default:
+            ErrorHandler(cpu);
     }
 }
 
@@ -373,10 +378,6 @@ void PreFetch(uint32_t Addr){
     cpu->CurrentInstAddr[2] = cpu->CurrentInstAddr[1];
     cpu->fetchcache[1] = cpu->fetchcache[0];
     cpu->CurrentInstAddr[1] = cpu->CurrentInstAddr[0];
-    if(Addr == 0x350){
-        //printf("Mode:%d, %x, %d, %x, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->CurrentInstAddr[2], cpu->cycle_sum);
-        //exit(1);
-    }
     if(cpu->dMode == ARM_MODE)cpu->fetchcache[0] = MemRead32(Addr);
     else{
         cpu->fetchcache[0] = MemRead16(Addr);
@@ -446,10 +447,10 @@ void CpuStatus(){
 }
 
 void IRQ_checker(uint32_t CPSR){
+    //printf("IRQ checker -> %ld\n", cpu->cycle_sum);
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                //printf("interrupt!\n");
                 IRQ_handler();
             }
         }
@@ -457,16 +458,16 @@ void IRQ_checker(uint32_t CPSR){
     else{
         if(cpu->Halt){
             if(MemRead8(0x4000208)){//IME
-            if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                //printf("interrupt!\n");
-                IRQ_handler();
+                if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
+                    IRQ_handler();
+                }
             }
-        }
         }
     }
 }
 
 void IRQ_handler(){
+    //printf("IRQ occured\n");
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
@@ -478,5 +479,5 @@ void IRQ_handler(){
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x8);
     cpu->Reg[PC] += 0x8;
     cpu->Halt = 0;
-    printf("cycle:%ld\n", cpu->cycle_sum);
+    //printf("cycle:%ld\n", cpu->cycle_sum);
 }

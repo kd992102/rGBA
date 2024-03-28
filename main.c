@@ -123,16 +123,18 @@ int main(int argc, char *argv[]){
 
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-            
+            /*if(cpu->cycle_sum >= 1731262){
+                printf("PC:%x\n", cpu->Reg[PC]);
+            }*/
+
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            //cpu->cycle_sum > 2007350
-            if(cpu->cycle_sum >= 1731262){
+            /*if(cpu->cycle_sum >= 75852955){
                 CpuStatus();
-                printf("cycle:%ld, 0x3007F9C:%x\n", cpu->cycle_sum, MemRead32(0x3007F9C));
-                printf("IRQ LR:%x\n", cpu->Reg_irq[1]);
+                //printf("cycle:%ld, 0x3007F9C:%x\n", cpu->cycle_sum, MemRead32(0x3007F9C));
+                //printf("IRQ LR:%x\n", cpu->Reg_irq[1]);
                 getchar();
-            }
+            }*/
             RecoverReg(cpu->Cmode);
         }
         IRQ_checker(cpu->CPSR);
