@@ -122,7 +122,8 @@ void ArmDataProc(uint32_t inst){
                 cpu->cycle += 2;
                 if(Rn == LR){
                     cpu->CPSR = cpu->SPSR_irq;
-                    if((cpu->CPSR >> 6) & 0x1)cpu->dMode = THUMB_MODE;
+                    //printf("SPSR_IRQ:%x\n", cpu->SPSR_irq);
+                    if((cpu->CPSR >> 5) & 0x1)cpu->dMode = THUMB_MODE;
                     if(cpu->dMode == THUMB_MODE){
                         cpu->InstOffset = 0x2;
                         cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
@@ -199,7 +200,21 @@ void ArmDataProc(uint32_t inst){
         case MOV://logical
             cpu->Reg[Rd] = exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
-            if(Rd == PC){cpu->cycle += 2;}
+            if(Rd == PC){
+                if((cpu->CPSR >> 5) & 0x1)cpu->dMode = THUMB_MODE;
+                if(cpu->dMode == THUMB_MODE){
+                    cpu->InstOffset = 0x2;
+                    cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+                    cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + cpu->InstOffset);
+                }
+                else{
+                    cpu->InstOffset = 0x4;
+                    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+                    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + cpu->InstOffset);
+                }
+                cpu->Reg[PC] += cpu->InstOffset;
+                cpu->cycle += 2;
+            }
             break;
         case BIC://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] & ~(exOpr);
@@ -219,15 +234,10 @@ void ArmBranch(uint32_t inst){
     cpu->DebugFunc = 10;
     if((inst >> 23) & 0x1)offset = (inst << 2) | 0xff000000;
     else{offset = (uint32_t)(inst << 2) & 0x3ffffff;}
-
     if((inst >> 24) & 0x1){//Link Bit
-        printf("Before PC:%x\n", cpu->Reg[PC]);
         cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
-        printf("After LR:%x\n", cpu->Reg[LR]);
     }
-    //printf("old PC : %08x\n", cpu->Reg[PC]);
     cpu->Reg[PC] = cpu->Reg[PC] + (int32_t)offset;
-    //printf("PC : %08x\n", cpu->Reg[PC]);
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;
@@ -238,11 +248,8 @@ void ArmBranch(uint32_t inst){
 void ArmBX(uint32_t inst){
     uint8_t Rn = inst & 0xf;
     cpu->DebugFunc = 4;
-    //if(Rn == PC)Undefined(cpu);//Exception
-    //cpu->Reg[PC] = cpu->Reg[Rn];
     cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
     if(cpu->Reg[Rn] & 0x1 == 0x1){
-        //printf("BX Thumb\n");
         cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
         cpu->Reg[PC] += 0x2;
@@ -277,10 +284,8 @@ void ArmSWP(uint32_t inst){
         //word
         tmp = cpu->Reg[Rd];
         cpu->Reg[Rd] = (uint32_t)(MemRead32(cpu->Reg[Rn]));
-        //printf("Rm %08x tmp %08x\n", cpu->Reg[Rm], tmp);
         if(Rd == Rm)MemWrite32(cpu->Reg[Rn], tmp);
         else{MemWrite32(cpu->Reg[Rn], cpu->Reg[Rm]);}
-        //printf("Content %08x\n", MemRead(cpu->Reg[Rn]));
     }
     cpu->cycle += 3;//1S+2N+1I
 }

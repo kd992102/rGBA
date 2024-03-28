@@ -57,17 +57,20 @@ void ThumbCondB(uint16_t inst){
     }
 }
 void ThumbSWI(uint16_t inst){
+    //printf("Thumb SWI\n");
     uint32_t swi_num = inst & 0xff;
     cpu->DebugFunc = 27;
-    cpu->Reg[LR] = cpu->Reg[PC] + 0x2;
-    cpu->CpuMode = ARM_MODE;
-    cpu->dMode = SVC;
-    ChkCPUMode();
+    RecoverReg(cpu->Cmode);
+    cpu->dMode = ARM_MODE;
+    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x13;
+    cpu->Cmode = ChkCPUMode();
+    //printf("PC->%x\n", cpu->Reg[PC]);
+    cpu->Reg[LR] = cpu->Reg[PC] - 0x4 + 0x2;
     //Initial SWI address
     cpu->Reg[PC] = 0x08;
     cpu->SPSR = cpu->CPSR;
     //Entry address offset
-    cpu->Reg[PC] += swi_num;
+    //cpu->Reg[PC] += swi_num;
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;
@@ -90,10 +93,7 @@ void ThumbLONGBL(uint16_t inst){
     uint32_t Offset = ((inst) & 0x7ff);
     uint32_t tmp = 0;
     cpu->DebugFunc = 29;
-    //printf("inst:%08x\n", inst);
-    //printf("PC:%08x, Offset:%08x\n", cpu->Reg[PC], Offset);
     if(H == 0){
-        //printf("%d->%x, %d, %x, %ld\n", H, cpu->CurrentInst, cpu->DebugFunc, cpu->CurrentInstAddr[2], cpu->cycle_sum);
         Offset = Offset << 12;
         if((Offset >> 22) & 0x1 == 1)cpu->Reg[LR] = cpu->Reg[PC] - (((~Offset) & 0x3fffff) + 1);
         else{
@@ -101,7 +101,6 @@ void ThumbLONGBL(uint16_t inst){
         }
     }
     else{
-        //printf("%d->%x, %d, %x, %ld\n", H, cpu->CurrentInst, cpu->DebugFunc, cpu->Reg[PC], cpu->cycle_sum);
         Offset = Offset << 1;
         tmp = cpu->Reg[PC] - 0x2;
         cpu->Reg[PC] = cpu->Reg[LR] + (Offset);

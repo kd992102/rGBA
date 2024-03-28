@@ -63,7 +63,7 @@ uint32_t MemoryAddrReloc(uint32_t addr){
             }
             break;
         default:
-            printf("cycle %lld Memory Address %08x Not Used", cpu->cycle_sum, addr);
+            printf("cycle %lld Memory Address %08x Not Used\n", cpu->cycle_sum, addr);
             ErrorHandler(cpu);
             return 1;
     }
@@ -105,7 +105,7 @@ void MemWrite32(uint32_t addr, uint32_t data){
         printf("Can't write BIOS section\n");
         exit(1);
     }*/
-    if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
+    //if(data == 0x3007FD4)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
@@ -137,7 +137,7 @@ void MemWrite16(uint32_t addr, uint16_t data){
         printf("Can't write BIOS section\n");
         exit(1);
     }*/
-    if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
+    //if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
@@ -168,7 +168,7 @@ void MemWrite8(uint32_t addr, uint8_t data){
         printf("Can't write BIOS section\n");
         exit(1);
     }*/
-    if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
+    //if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
