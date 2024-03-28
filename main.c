@@ -129,12 +129,12 @@ int main(int argc, char *argv[]){
 
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            /*if(cpu->cycle_sum >= 75852955){
+            //76367197
+            if(cpu->cycle_sum >= 76367197){
                 CpuStatus();
-                //printf("cycle:%ld, 0x3007F9C:%x\n", cpu->cycle_sum, MemRead32(0x3007F9C));
-                //printf("IRQ LR:%x\n", cpu->Reg_irq[1]);
+                printf("cycle:%ld\n", cpu->cycle_sum);
                 getchar();
-            }*/
+            }
             RecoverReg(cpu->Cmode);
         }
         IRQ_checker(cpu->CPSR);
