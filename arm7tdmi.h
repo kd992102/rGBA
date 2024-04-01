@@ -52,6 +52,8 @@ typedef struct arm7tdmi{
 
     uint32_t Regbk[8];
 
+    uint8_t saveMode;
+
     uint8_t carry_out;
     uint8_t InstOffset;
     uint32_t fetchcache[3];

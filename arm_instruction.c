@@ -198,10 +198,16 @@ void ArmDataProc(uint32_t inst){
             if(Rd == PC){cpu->cycle += 2;}
             break;
         case MOV://logical
+        //back to swi
             cpu->Reg[Rd] = exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC){
-                if((cpu->CPSR >> 5) & 0x1)cpu->dMode = THUMB_MODE;
+                if(cpu->Cmode == SVC){
+                    RecoverReg(cpu->Cmode);
+                    cpu->CPSR = (cpu->CPSR & 0xffffffe0) + SYSTEM;
+                }
+                cpu->dMode = cpu->saveMode;
+                //RecoverReg(cpu->Cmode);
                 if(cpu->dMode == THUMB_MODE){
                     cpu->InstOffset = 0x2;
                     cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);

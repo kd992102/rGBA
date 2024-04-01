@@ -61,6 +61,7 @@ void ThumbSWI(uint16_t inst){
     uint32_t swi_num = inst & 0xff;
     cpu->DebugFunc = 27;
     RecoverReg(cpu->Cmode);
+    cpu->saveMode = THUMB_MODE;
     cpu->dMode = ARM_MODE;
     cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x13;
     cpu->Cmode = ChkCPUMode();
@@ -229,7 +230,6 @@ void ThumbPPREG(uint16_t inst){
                 n += 1;
             }
         }
-        //printf("cycle : %lld push n: %d\n",cpu->cycle_sum, n);
         cpu->cycle += (n);
     }
 }

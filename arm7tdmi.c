@@ -400,6 +400,9 @@ uint32_t CpuExecute(uint32_t inst)
         case THUMB_MODE:
             ThumbModeDecode(inst);
             return 0;
+        default:
+            printf("[Error]->CpuExecute\n");
+            exit(1);
     }
 }
 
