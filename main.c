@@ -123,18 +123,15 @@ int main(int argc, char *argv[]){
 
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-            /*if(cpu->cycle_sum >= 1731262){
-                printf("PC:%x\n", cpu->Reg[PC]);
-            }*/
 
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            //76367197
-            if(cpu->cycle_sum >= 76367197){
+            //76367197,76367267
+            /*if(cpu->cycle_sum >= 76367197){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
-                getchar();
-            }
+                //getchar();
+            }*/
             RecoverReg(cpu->Cmode);
         }
         IRQ_checker(cpu->CPSR);
@@ -147,25 +144,7 @@ int main(int argc, char *argv[]){
             cpu->cycle_sum += 1;
             if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
         }
-
-        /*if(cpu->cycle_sum > 2007350){
-            CpuStatus();
-            printf("Cycle:%d\n", cpu->cycle_sum);
-            printf("Current Instruction:%x\n", cpu->CurrentInst);
-            printf("Instruction Cycle:%d\n", cpu->cycle);
-            printf("DISP:%x:%x\n", DISPSTAT, MemRead32(DISPSTAT));
-            printf("VCOUNT:%x\n", MemRead16(VCOUNT));
-            printf("CPSR->I-flag:%x\n", (cpu->CPSR >> 7) & 0x1);
-            printf("IME:%x:%x\n", 0x4000208, MemRead8(0x4000208));
-            printf("IE:%x:%x\n", 0x4000200, MemRead16(0x4000200));
-            printf("IR:%x:%x\n", 0x4000202, MemRead16(0x4000202));
-            printf("WRAM %x:%x\n", 0x3007ffc, MemRead32(0x3007ffc));
-            printf("Sprite %x:%x\n", 0x7000030, MemRead32(0x7000030));
-            printf("WRAM:%x:%x\n", 0x3001568, MemRead32(0x3001568));
-            getchar();
-            //exit(1);
-        }*/
-        Timer_Clock(cpu->cycle);
+        //Timer_Clock(cpu->cycle);
         cpu->cycle = 0;
     }
     Release_GbaMem();

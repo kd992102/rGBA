@@ -7,6 +7,7 @@ extern Gba_Cpu *cpu;
 extern GbaMem *Mem;
 
 uint32_t MemoryAddrReloc(uint32_t addr){
+    if(addr >= 0x0 && addr <= 0xE010000){
     switch(addr & 0xf000000){
         case BIOS_ADDR_BASE:
             if((addr ^ BIOS_ADDR_BASE) < BIOS_MEM_SIZE)return (uint32_t)(Mem->BIOS) + (uint32_t)(addr - BIOS_ADDR_BASE);
@@ -67,23 +68,27 @@ uint32_t MemoryAddrReloc(uint32_t addr){
             ErrorHandler(cpu);
             return 1;
     }
+    }
+    else{
+        printf("cycle %lld Memory Address %08x Not Used\n", cpu->cycle_sum, addr);
+        ErrorHandler(cpu);
+        return 1;
+    }
 }
 
 uint32_t MemRead32(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
-    //if(addr >= 0x3000000 && addr < 0x4000000)printf("32 cycle:%llu, %x\n", cpu->cycle_sum, addr);
+    //if(addr >= 0x0 && addr <= 0E010000)
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF){
         cpu->cycle += 4;
-        //printf("ROM addr %x\n", RelocAddr);
     }
     return *((uint32_t *)RelocAddr);
 }
 
 uint16_t MemRead16(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
-    //if(addr >= 0x3000000 && addr < 0x4000000)printf("16 cycle:%llu, %x\n", cpu->cycle_sum, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint16_t *)RelocAddr);
@@ -91,7 +96,6 @@ uint16_t MemRead16(uint32_t addr){
 
 uint8_t MemRead8(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
-    //if(addr >= 0x3000000 && addr < 0x4000000)printf(" 8 cycle:%llu, %x\n", cpu->cycle_sum, addr);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     return *((uint8_t *)RelocAddr);
@@ -100,44 +104,26 @@ uint8_t MemRead8(uint32_t addr){
 void MemWrite32(uint32_t addr, uint32_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint32_t tmp;
-    //if(addr >= 0x3007f00 && addr < 0x3008000)printf("32 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
-    /*if(addr >= 0 && addr <= 0x4000){
-        printf("Can't write BIOS section\n");
-        exit(1);
-    }*/
-    //if(data == 0x3007FD4)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
+
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
         tmp = *((uint32_t *)RelocAddr);
-        //printf("tmp:%x\n", tmp);
         *((uint32_t *)RelocAddr) = ((data & 0xff00fff8)|(tmp & 0xff0007));
     }
     else if(addr >= 0x4000200 && addr < 0x4000204){
-        //printf("[write32] %x->%x\n", data, addr);
         MemWrite8(addr,data & 0xff);
-        //printf("[write8] %x->%x\n", data & 0xff, addr);
         MemWrite8(addr+1,(data >> 8) & 0xff);
-        //printf("[write8] %x->%x\n", (data >> 8) & 0xff, addr+1);
         MemWrite8(addr+2,(data >> 16) & 0xff);
-        //printf("[write8] %x->%x\n", (data >> 16) & 0xff, addr+2);
         MemWrite8(addr+3,(data >> 24) & 0xff);
-        //printf("[write8] %x->%x\n", (data >> 24) & 0xff, addr+3);
     }
     else{*((uint32_t *)RelocAddr) = data;}
-    //*((uint16_t *)RelocAddr) = data;
 }
 
 void MemWrite16(uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint16_t tmp;
-    //if(addr >= 0x3007f00 && addr < 0x3008000)printf("16 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
-    /*if(addr >= 0 && addr <= 0x4000){
-        printf("Can't write BIOS section\n");
-        exit(1);
-    }*/
-    //if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
@@ -149,11 +135,8 @@ void MemWrite16(uint32_t addr, uint16_t data){
         *((uint16_t *)RelocAddr) = tmp;
     }
     else if(addr >= 0x4000202 && addr < 0x4000204){
-        //printf("[write16] %x->%x\n", data, addr);
         MemWrite8(addr,data & 0xff);
-        //printf("[write8] %x->%x\n", data & 0xff, addr);
         MemWrite8(addr+1,(data >> 8) & 0xff);
-        //printf("[write8] %x->%x\n", (data >> 8) & 0xff, addr+1);
     }
     else{
         *((uint16_t *)RelocAddr) = data;
@@ -163,12 +146,6 @@ void MemWrite16(uint32_t addr, uint16_t data){
 void MemWrite8(uint32_t addr, uint8_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     uint8_t tmp;
-    //if(addr >= 0x3007f00 && addr < 0x3008000)printf(" 8 cycle:%llu, %x->%x\n", cpu->cycle_sum, data ,addr);
-    /*if(addr >= 0 && addr <= 0x4000){
-        printf("Can't write BIOS section\n");
-        exit(1);
-    }*/
-    //if(addr == 0x3007F9C)printf("offset:%x Instruction : %x, data : %x\n", cpu->CurrentInstAddr[2], cpu->CurrentInst, data);
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
@@ -180,11 +157,9 @@ void MemWrite8(uint32_t addr, uint8_t data){
         *((uint8_t *)RelocAddr) = tmp;
     }
     else if(addr >= 0x4000200 && addr < 0x4000208){
-        //printf("[Write8] %x <- %x\n", addr ,data);
         if(addr == 0x4000202){
             tmp = *((uint8_t *)RelocAddr);
             *((uint8_t *)RelocAddr) = ((tmp & ~0xff)|((tmp & 0xff) & (~data)));
-            //printf("[write-8] %x->%x\n", ((tmp & 0xff)|((tmp & ~0xff) & (~data))), addr);
         }
         else if(addr == 0x4000203){
             tmp = *((uint8_t *)RelocAddr);
@@ -196,7 +171,6 @@ void MemWrite8(uint32_t addr, uint8_t data){
     }
     else if(addr == 0x4000301){
         cpu->Halt = 1;
-        //printf("Suprise!!!!!\n");
     }
     else{*((uint8_t *)RelocAddr) = data;}
 }
