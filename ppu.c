@@ -480,7 +480,7 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
     //y2 = C(x1-x0) + D(y1-y0) + y0
 }
 
-void DrawBG(SDL_Renderer *renderer){
+void DrawBG(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen){
     struct BG_CNT BG_CNT[4];
     uint16_t DISP = MemRead16(DISPCNT);
     BG_CNT[0] = LoadBGCNT(BG_CNT[0], 0);
@@ -491,22 +491,36 @@ void DrawBG(SDL_Renderer *renderer){
     uint8_t Frame = (DISP >> 4) & 0x1;
     uint8_t Blank = (DISP >> 7) & 0x1;
     uint8_t BG_enable[3] = {0xf,0x7,0xc};
-    uint8_t priority, bg_idx;
+    int8_t priority, bg_idx;
     uint8_t affine = 0;
-    /*switch(Mode){
+    switch(Mode){
         case 0:
         case 1:
         case 2:
             uint8_t enb = ((DISP >> 8) & 0xf) & BG_enable[Mode];
+            
             for(priority = 3; priority >= 0; priority--){
+                //printf("BG Mode:%u, priority:%u\n", Mode, priority);
                 for(bg_idx = 3; bg_idx >= 0; bg_idx--){
+                    //if BG_X not enable, passed
                     if(!(enb & (1 << bg_idx)))continue;
-                    if((BG_CNT[bg_idx] & 0x3) != priority)continue;
+                    //check BG_X prority
+                    if(BG_CNT[bg_idx].Prio != priority)continue;
+                    //check if affine
                     if(Mode == 2 || (Mode == 1 && bg_idx == 2))affine = 1;
-                    uint32_t addr;
+                    
+                    if(affine){
+
+                    }else{
+                        uint16_t offset_y = vcount + MemRead16(0x4000012 + 4*bg_idx);//BG_X Y-Offset
+                        uint8_t x;
+                        for(x = 0; x < 240; x++){
+                            uint16_t offset_x = x + MemRead16(0x4000010 + 4*bg_idx);
+                        }
+                    }
                 }
             }
-    }*/
+    }
 }
 
 void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
@@ -522,7 +536,7 @@ void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* rende
         objwin = 0;
     }
     else{
-        //DrawBG(renderer);
+        DrawBG(renderer);
         //printf("render obj\n");
         DrawOBJwindow(renderer, reg_vcount, screen);
         DrawSprite(renderer, 0, reg_vcount, screen);
