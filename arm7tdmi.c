@@ -172,6 +172,8 @@ void RecoverReg(uint8_t Cmode){
             cpu->Reg[LR] = cpu->Regbk[6];
             cpu->SPSR = cpu->Regbk[7];
             break;
+        case SYSTEM:
+            break;
         default:
             for(int i=0;i<8;i++){
                 cpu->Regbk[i] = 0x0;
@@ -218,6 +220,7 @@ uint8_t ChkCPUMode(){
             return IRQ;
         case 0x13:
             //Supervisor
+            printf("Enter SVC Mode, R13_svc:%x\n", cpu->Reg_svc[0]);
             cpu->CpuMode = SVC;
             cpu->Regbk[5] = cpu->Reg[SP];
             cpu->Regbk[6] = cpu->Reg[LR];
@@ -402,7 +405,8 @@ uint32_t CpuExecute(uint32_t inst)
             return 0;
         default:
             printf("[Error]->CpuExecute\n");
-            exit(1);
+            ErrorHandler(cpu);
+            //exit(1);
     }
 }
 

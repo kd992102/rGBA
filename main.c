@@ -96,6 +96,7 @@ int main(int argc, char *argv[]){
     cpu->cycle = 0;
     cpu->cycle_sum = 0;
     cpu->Cmode = 0x1F;
+    cpu->saveMode = ARM_MODE;
     cpu->Halt = 0;
     //getchar();
     SDL_LockTexture(texture, NULL, &screen, &tex_pitch);
@@ -113,25 +114,22 @@ int main(int argc, char *argv[]){
     //main loop
     for(;;){
         if(cpu->Halt == 0){
-            /*if(cpu->fetchcache[2] == 0xfffc){
-                printf("Mode:%d, %x, %d, %ld\n", cpu->dMode, cpu->CurrentInst, cpu->DebugFunc, cpu->cycle_sum);
-                break;
-            }*/
             cpu->Cmode = ChkCPUMode();
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
 
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-
+            //75853094, 76383052
+            //0x800107e->0x480f, 76367350
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            //76367197,76367267
-            /*if(cpu->cycle_sum >= 76367197){
+            if(cpu->fetchcache[2] == 0xea00004c){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
-                //getchar();
-            }*/
+                getchar();
+            }
+            //76367197,76367267
             RecoverReg(cpu->Cmode);
         }
         IRQ_checker(cpu->CPSR);
@@ -144,7 +142,7 @@ int main(int argc, char *argv[]){
             cpu->cycle_sum += 1;
             if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
         }
-        //Timer_Clock(cpu->cycle);
+        Timer_Clock(cpu->cycle);
         cpu->cycle = 0;
     }
     Release_GbaMem();

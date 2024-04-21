@@ -128,7 +128,7 @@ struct BG_CNT LoadBGCNT(struct BG_CNT BGCNT, uint8_t BGNum);
 struct OBJ_Affine * LoadOBJAffine(struct OBJ_Affine * affine, uint16_t GroupNum);
 uint32_t ColorFormatTranslate(uint16_t BGR555);
 
-void DrawBG(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen);
+void DrawBG(SDL_Renderer* renderer, uint16_t vcount, void *screen);
 void DrawOBJwindow(SDL_Renderer* renderer, uint16_t vcount, void *screen);
 void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen);
 void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
