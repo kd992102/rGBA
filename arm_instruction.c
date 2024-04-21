@@ -73,7 +73,7 @@ void ArmPSRT(uint32_t inst){
     uint32_t Opr = (inst & 0xfff);
     uint32_t res;
     cpu->DebugFunc = 0;
-    //printf("Cycle:%d, PSRT\n", cpu->cycle);
+    RecoverReg(cpu->Cmode);
     if(bit){
         //MSR
         if(b_only){
@@ -93,6 +93,7 @@ void ArmPSRT(uint32_t inst){
             cpu->Reg[Rd] = cpu->CPSR;
         }
     }
+    cpu->Cmode = ChkCPUMode();
 }
 
 void ArmDataProc(uint32_t inst){
@@ -205,9 +206,9 @@ void ArmDataProc(uint32_t inst){
                 if(cpu->Cmode == SVC){
                     RecoverReg(cpu->Cmode);
                     cpu->CPSR = (cpu->CPSR & 0xffffffe0) + SYSTEM;
+                    //cpu->Cmode = ChkCPUMode();
                 }
                 cpu->dMode = cpu->saveMode;
-                //RecoverReg(cpu->Cmode);
                 if(cpu->dMode == THUMB_MODE){
                     cpu->InstOffset = 0x2;
                     cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
@@ -403,13 +404,14 @@ void ArmSWI(uint32_t inst){
     cpu->DebugFunc = 11;
     uint32_t swi_num = inst & 0xffffff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
-    cpu->dMode = SVC;
-    ChkCPUMode();
+    RecoverReg(cpu->Cmode);
+    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x13;
+    cpu->Cmode = ChkCPUMode();
     //Initial SWI address
     cpu->Reg[PC] = 0x8;
-    cpu->SPSR = cpu->CPSR;
+    cpu->SPSR_svc = cpu->CPSR;
     //Entry address offset
-    cpu->Reg[PC] += swi_num;
+    //cpu->Reg[PC] += swi_num;
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;

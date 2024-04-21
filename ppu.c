@@ -480,7 +480,7 @@ void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *scr
     //y2 = C(x1-x0) + D(y1-y0) + y0
 }
 
-void DrawBG(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen){
+void DrawBG(SDL_Renderer* renderer , uint16_t vcount, void *screen){
     struct BG_CNT BG_CNT[4];
     uint16_t DISP = MemRead16(DISPCNT);
     BG_CNT[0] = LoadBGCNT(BG_CNT[0], 0);
@@ -499,7 +499,7 @@ void DrawBG(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen)
         case 2:
             uint8_t enb = ((DISP >> 8) & 0xf) & BG_enable[Mode];
             
-            for(priority = 3; priority >= 0; priority--){
+            /*for(priority = 3; priority >= 0; priority--){
                 //printf("BG Mode:%u, priority:%u\n", Mode, priority);
                 for(bg_idx = 3; bg_idx >= 0; bg_idx--){
                     //if BG_X not enable, passed
@@ -516,10 +516,13 @@ void DrawBG(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen)
                         uint8_t x;
                         for(x = 0; x < 240; x++){
                             uint16_t offset_x = x + MemRead16(0x4000010 + 4*bg_idx);
+                            uint16_t chr_x = offset_x & 7;
+                            uint16_t chr_y = offset_y & 7;
+                            //uint
                         }
                     }
                 }
-            }
+            }*/
     }
 }
 
@@ -536,7 +539,7 @@ void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* rende
         objwin = 0;
     }
     else{
-        DrawBG(renderer);
+        //DrawBG(renderer, reg_vcount, screen);
         //printf("render obj\n");
         DrawOBJwindow(renderer, reg_vcount, screen);
         DrawSprite(renderer, 0, reg_vcount, screen);
