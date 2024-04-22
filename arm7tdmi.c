@@ -12,6 +12,26 @@
 extern Gba_Cpu *cpu;
 extern GbaMem *Mem;
 
+uint32_t SPSR_switch(){
+    switch(cpu->Cmode){
+        case SYSTEM:
+            return cpu->SPSR;
+        case SVC:
+            return cpu->SPSR_svc;
+        case ABT:
+            return cpu->SPSR_abt;
+        case FIQ:
+            return cpu->SPSR_fiq;
+        case IRQ:
+            return cpu->SPSR_irq;
+        case USER:
+            return cpu->SPSR;
+        case UNDEF:
+            return cpu->SPSR_und;
+    }
+    return cpu->SPSR;
+}
+
 uint8_t CheckCond(){
     uint8_t N = ((cpu->CPSR >> 31) & 0x1);
     uint8_t Z = ((cpu->CPSR >> 30) & 0x1);
@@ -186,6 +206,7 @@ uint8_t ChkCPUMode(){
     switch((cpu->CPSR & 0x1F)){
         case 0x10:
             //User
+            printf("[USER] SPSR:%08x\n", cpu->SPSR);
             cpu->CpuMode = USER;
             return USER;
         case 0x11:
@@ -220,7 +241,7 @@ uint8_t ChkCPUMode(){
             return IRQ;
         case 0x13:
             //Supervisor
-            printf("Enter SVC Mode, R13_svc:%x\n", cpu->Reg_svc[0]);
+            //printf("Enter SVC Mode, R13_svc:%x\n", cpu->Reg_svc[0]);
             cpu->CpuMode = SVC;
             cpu->Regbk[5] = cpu->Reg[SP];
             cpu->Regbk[6] = cpu->Reg[LR];
@@ -252,6 +273,7 @@ uint8_t ChkCPUMode(){
         case 0x1F:
             //System
             cpu->CpuMode = SYSTEM;
+            //printf("[SYSTEM] SPSR:%08x\n", cpu->SPSR);
             return SYSTEM;
         default:
             ErrorHandler(cpu);
@@ -420,6 +442,8 @@ void CpuStatus(){
 
     printf("\n--------status-------\n");
     printf("CPSR:%08x\n", cpu->CPSR);
+    printf("SPSR:%08x\n", cpu->SPSR);
+    printf("R13_svc:%08x\n", cpu->Reg_svc[0]);
     switch((cpu->CPSR & 0x1f)){
         case USER:
             printf("Operating mode:User\n");

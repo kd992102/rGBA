@@ -59,18 +59,14 @@ void ThumbCondB(uint16_t inst){
 void ThumbSWI(uint16_t inst){
     uint32_t swi_num = inst & 0xff;
     cpu->DebugFunc = 27;
-    RecoverReg(cpu->Cmode);
     cpu->saveMode = THUMB_MODE;
-    //printf("Thumb SWI, %ld\n", cpu->cycle_sum);
     cpu->dMode = ARM_MODE;
-    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x13;
-    cpu->Cmode = ChkCPUMode();
-    cpu->Reg[LR] = cpu->Reg[PC] - 0x4 + 0x2;
+    cpu->SPSR_svc = cpu->CPSR;
+    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x93;
+    cpu->Reg_svc[1] = cpu->Reg[PC] - 0x4 + 0x2;
     //Initial SWI address
     cpu->Reg[PC] = 0x08;
-    cpu->SPSR = cpu->CPSR;
     //Entry address offset
-    //cpu->Reg[PC] += swi_num;
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;

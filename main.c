@@ -93,11 +93,6 @@ int main(int argc, char *argv[]){
     SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0x00);
     SDL_RenderClear(renderer);
     PPUMemWrite16(VCOUNT, 0x7E);
-    cpu->cycle = 0;
-    cpu->cycle_sum = 0;
-    cpu->Cmode = 0x1F;
-    cpu->saveMode = ARM_MODE;
-    cpu->Halt = 0;
     //getchar();
     SDL_LockTexture(texture, NULL, &screen, &tex_pitch);
     for(uint32_t addr = 0;addr < (159*240*4);addr += 0x10){
@@ -115,6 +110,7 @@ int main(int argc, char *argv[]){
     for(;;){
         if(cpu->Halt == 0){
             cpu->Cmode = ChkCPUMode();
+            //if(cpu->Cmode != SYSTEM && cpu->Cmode != USER)printf("Mode change\n");
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
 
@@ -124,7 +120,7 @@ int main(int argc, char *argv[]){
             //0x800107e->0x480f, 76367350
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            if(cpu->fetchcache[2] == 0xea00004c){
+            if(cpu->fetchcache[2] == 0xe92d5800){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
                 getchar();
