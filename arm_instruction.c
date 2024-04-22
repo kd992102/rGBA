@@ -73,11 +73,13 @@ void ArmPSRT(uint32_t inst){
     uint32_t Opr = (inst & 0xfff);
     uint32_t res;
     cpu->DebugFunc = 0;
-    RecoverReg(cpu->Cmode);
+    //RecoverReg(cpu->Cmode);
     if(bit){
         //MSR
         if(b_only){
-            if(psr)cpu->SPSR = cpu->Reg[Rm];
+            if(psr){
+                cpu->SPSR = cpu->Reg[Rm];
+            }
             else{cpu->CPSR = cpu->Reg[Rm];}
         }
         else{
@@ -93,7 +95,7 @@ void ArmPSRT(uint32_t inst){
             cpu->Reg[Rd] = cpu->CPSR;
         }
     }
-    cpu->Cmode = ChkCPUMode();
+    //cpu->Cmode = ChkCPUMode();
 }
 
 void ArmDataProc(uint32_t inst){
@@ -170,7 +172,7 @@ void ArmDataProc(uint32_t inst){
                 ArmPSRT(inst);
                 break;
             }
-            else{CPSRUpdate(LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);};
+            else{CPSRUpdate(LOG, cpu->Reg[Rn] & exOpr, cpu->Reg[Rn], exOpr);}
             break;
         case TEQ://logical
                 //EOR
@@ -178,7 +180,7 @@ void ArmDataProc(uint32_t inst){
                 ArmPSRT(inst);
                 break;
             }
-            else{CPSRUpdate(LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);};
+            else{CPSRUpdate(LOG, cpu->Reg[Rn] ^ exOpr, cpu->Reg[Rn], exOpr);}
             break;
         case CMP://arith
                 //SUB
@@ -191,7 +193,7 @@ void ArmDataProc(uint32_t inst){
         case CMN://arith
             //ADD
             if(!S_bit)ArmPSRT(inst);
-            else{CPSRUpdate(A_ADD, cpu->Reg[Rn] + exOpr, cpu->Reg[Rn], exOpr);};
+            else{CPSRUpdate(A_ADD, cpu->Reg[Rn] + exOpr, cpu->Reg[Rn], exOpr);}
             break;
         case ORR://logical
             cpu->Reg[Rd] = cpu->Reg[Rn] | exOpr;
@@ -404,14 +406,11 @@ void ArmSWI(uint32_t inst){
     cpu->DebugFunc = 11;
     uint32_t swi_num = inst & 0xffffff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
-    RecoverReg(cpu->Cmode);
-    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x13;
-    cpu->Cmode = ChkCPUMode();
+    cpu->SPSR_svc = cpu->CPSR;
+    cpu->CPSR = (cpu->CPSR & 0xffffff00) + 0x93;
     //Initial SWI address
     cpu->Reg[PC] = 0x8;
-    cpu->SPSR_svc = cpu->CPSR;
     //Entry address offset
-    //cpu->Reg[PC] += swi_num;
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;
