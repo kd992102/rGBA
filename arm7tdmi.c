@@ -286,6 +286,7 @@ void ArmModeDecode(uint32_t inst){
     if(CheckCond(cpu->CPSR, cpu->Cond)){
         switch(((inst >> 26) & 0x3)){
             case 0:
+                if(inst == 0xe3a0c0d3)printf("case 0 here\n");
                 if(((inst >> 4) & 0xffffff) == 0x12fff1){
                     ArmBX(inst);
                 }
@@ -488,6 +489,7 @@ void IRQ_checker(uint32_t CPSR){
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
+                printf("IRQ occured\n");
                 IRQ_handler();
             }
         }
@@ -504,7 +506,6 @@ void IRQ_checker(uint32_t CPSR){
 }
 
 void IRQ_handler(){
-    //printf("IRQ occured\n");
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
