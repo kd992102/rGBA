@@ -116,11 +116,12 @@ int main(int argc, char *argv[]){
 
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-            //75853094, 76383052
-            //0x800107e->0x480f, 76367350
+            //75853094, 76383052, 76352772, 76367197, 76367237, 76375306, 76452313, 76394991
+            //0x800107e->0x480f, 76367350, 76391055, 76394846, 76395608, 76396239
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
-            if(cpu->fetchcache[2] == 0xe92d5800){
+            // && cpu->fetchcache[2] == 0xbc30
+            if(cpu->cycle_sum >= 76444759){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
                 getchar();

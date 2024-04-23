@@ -282,6 +282,7 @@ uint8_t ChkCPUMode(){
 
 void ArmModeDecode(uint32_t inst){
     cpu->Cond = (inst >> 28) & 0xf;
+    if(inst == 0xe3a0c0d3)printf("here\n");
     if(CheckCond(cpu->CPSR, cpu->Cond)){
         switch(((inst >> 26) & 0x3)){
             case 0:
@@ -290,6 +291,7 @@ void ArmModeDecode(uint32_t inst){
                 }
                 else{
                     if((((inst >> 4) & 0xf) == 0xb || ((inst >> 4) & 0xf) == 0xf || ((inst >> 4) & 0xf) == 0xd) && ((inst >> 25) & 0x1) == 0 && (((inst >> 24) & 0x1) >= ((inst >> 21) & 0x1))){
+                        if(inst == 0xe3a0c0d3)printf("SDTS here\n");
                         ArmSDTS(inst);
                     }
                     else if(((inst >> 4) & 0xf) == 9){
@@ -299,6 +301,7 @@ void ArmModeDecode(uint32_t inst){
                         else{ArmDataProc(inst);}
                     }
                     else{
+                        if(inst == 0xe3a0c0d3)printf("ALU here\n");
                         ArmDataProc(inst);
                     }
                 }
@@ -320,6 +323,9 @@ void ArmModeDecode(uint32_t inst){
             default:
                 ErrorHandler(cpu);
         }
+    }
+    else{
+        if(inst == 0xe3a0c0d3)printf("here\n");
     }
 }
 
@@ -444,7 +450,7 @@ void CpuStatus(){
     printf("CPSR:%08x\n", cpu->CPSR);
     printf("SPSR:%08x\n", cpu->SPSR);
     printf("R13_svc:%08x\n", cpu->Reg_svc[0]);
-    switch((cpu->CPSR & 0x1f)){
+    switch(cpu->Cmode){
         case USER:
             printf("Operating mode:User\n");
             break;
