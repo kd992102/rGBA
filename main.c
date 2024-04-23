@@ -121,9 +121,11 @@ int main(int argc, char *argv[]){
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
             // && cpu->fetchcache[2] == 0xbc30
-            if(cpu->cycle_sum >= 76444759){
+            if(cpu->cycle_sum >= 76444750){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
+                printf("CPSR:%x, Halt:%d\n", cpu->CPSR, cpu->Halt);
+                //printf("IF:%x, IE:%x\n", MemRead8(0x4000200), MemRead8(0x4000202));
                 getchar();
             }
             //76367197,76367267
@@ -134,7 +136,7 @@ int main(int argc, char *argv[]){
         if(cpu->Halt == 1){
             cpu->cycle = 1;
         }
-        //According to the instruction cycles update the PPU 
+        //According to the instruction cycles update the PPU
         for(int i=0;i<cpu->cycle;i++){
             cpu->cycle_sum += 1;
             if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
