@@ -344,7 +344,22 @@ void ThumbBX(uint16_t inst){
             CPSRUpdate(A_SUB, cpu->Reg[Rd] - cpu->Reg[Rs], cpu->Reg[Rd], cpu->Reg[Rs]);
             break;
         case 2:
-            cpu->Reg[Rd] = cpu->Reg[Rs];
+            if(Rd == PC){
+                cpu->Reg[Rd] = cpu->Reg[Rs] & 0xfffffffe;
+                if(cpu->dMode == THUMB_MODE){
+                    cpu->InstOffset = 0x2;
+                    cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
+                    cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + cpu->InstOffset);
+                }
+                else{
+                    cpu->InstOffset = 0x4;
+                    cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+                    cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + cpu->InstOffset);
+                }
+                cpu->Reg[PC] += cpu->InstOffset;
+                cpu->cycle += 2;
+            }
+            else{cpu->Reg[Rd] = cpu->Reg[Rs];}
             break;
         case 3:
             //printf("Rs:%d, Rs Content:%08x\n", Rs, cpu->Reg[Rs]);
