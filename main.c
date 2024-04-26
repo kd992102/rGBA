@@ -129,6 +129,8 @@ int main(int argc, char *argv[]){
             if(cpu->fetchcache[2] == 0xe92d5800){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
+                printf("CPSR:%x, Halt:%d\n", cpu->CPSR, cpu->Halt);
+                //printf("IF:%x, IE:%x\n", MemRead8(0x4000200), MemRead8(0x4000202));
                 getchar();
             }
             //76367197,76367267
