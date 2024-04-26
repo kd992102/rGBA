@@ -563,7 +563,11 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
     uint8_t disp_vcount = (reg_status >> 8) & 0xff;
     uint32_t horizon = 0;
     uint32_t vertical = 0;
-    horizon = cycle % SCANLINE_CYCLE;
+    if(reg_vcount == 0xa0){
+        if(((reg_status >> 3) & 1)){
+            PPUMemWrite16(0x4000202, 0x1);
+        }
+    }
     if(reg_vcount == disp_vcount){
         reg_vc_match = 1;
         //printf("v-count match, reg:%d, disp:%d\n", reg_vcount, disp_vcount);
@@ -572,17 +576,17 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
 
     if(reg_vcount >= VDRAW && reg_vcount < 228){
         reg_vblank = 1;
-        DMA_Transfer(DMA_CH, 1);
+        //DMA_Transfer(DMA_CH, 1);
     }
     else{reg_vblank = 0;}
 
-    if(horizon > HBLANK_ZERO_CYCLE){
+    /*if(horizon > HBLANK_ZERO_CYCLE){
         reg_hblank = 1;
         DMA_Transfer(DMA_CH, 2);
-    }
-    else{
+    }*/
+    /*else{
         reg_hblank = 0;
-    }
+    }*/
     if(horizon == 0){
         if(reg_vcount == 0){
             uint32_t addr;
@@ -597,8 +601,13 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
         }
         if(reg_vcount < VDRAW ){
             DrawScanLine(reg_vcount, texture, renderer, screen);
+            reg_hblank = 1;
+            //DMA_Transfer(DMA_CH, 2);
         }
         reg_vcount += 1;
+        reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
+        PPUMemWrite16(DISPSTAT, reg_status);
+        reg_status = MemRead16(DISPSTAT);
         if(reg_vcount == 228){
             SDL_UnlockTexture(texture);
             //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
@@ -611,12 +620,6 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
         PPUMemWrite16(VCOUNT, reg_vcount);
     }
 
-    reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
-    PPUMemWrite16(DISPSTAT, reg_status);
-    reg_status = MemRead16(DISPSTAT);
-    if(((reg_status >> 3) & 1) && (reg_vcount == 0xA0)){
-        PPUMemWrite16(0x4000202, 0x1);
-    }
-    else if(((reg_status >> 4) & 1) && ((reg_status >> 1) & 1) && (MemRead8(0x4000208) == 0))PPUMemWrite16(0x4000202, 0x2);
-    else if(((reg_status >> 5) & 1) && ((reg_status >> 2) & 1) && (MemRead8(0x4000208) == 0))PPUMemWrite16(0x4000202, 0x3);
+    //else if(((reg_status >> 4) & 1) && ((reg_status >> 1) & 1) && (MemRead8(0x4000208) == 0))PPUMemWrite16(0x4000202, 0x2);
+    //else if(((reg_status >> 5) & 1) && ((reg_status >> 2) & 1) && (MemRead8(0x4000208) == 0))PPUMemWrite16(0x4000202, 0x3);
 }

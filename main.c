@@ -121,7 +121,12 @@ int main(int argc, char *argv[]){
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
             // && cpu->fetchcache[2] == 0xbc30
-            if(cpu->cycle_sum >= 76444759){
+            //According to the instruction cycles update the PPU 
+            for(int i=0;i<cpu->cycle;i++){
+                cpu->cycle_sum += 1;
+                if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
+            }
+            if(cpu->fetchcache[2] == 0xe92d5800){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
                 getchar();
@@ -129,17 +134,13 @@ int main(int argc, char *argv[]){
             //76367197,76367267
             RecoverReg(cpu->Cmode);
         }
-        IRQ_checker(cpu->CPSR);
-        //if Halt enable
-        if(cpu->Halt == 1){
-            cpu->cycle = 1;
-        }
-        //According to the instruction cycles update the PPU 
-        for(int i=0;i<cpu->cycle;i++){
+        else if(cpu->Halt == 1){
             cpu->cycle_sum += 1;
-            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum - 393), texture, renderer, screen);
+            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
         }
+        //if Halt enable
         Timer_Clock(cpu->cycle);
+        IRQ_checker(cpu->CPSR);
         cpu->cycle = 0;
     }
     Release_GbaMem();
