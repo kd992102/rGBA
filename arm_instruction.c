@@ -573,10 +573,12 @@ void ArmBDT(uint32_t inst){
     uint32_t RWaddr = cpu->Reg[Rn];
     uint8_t n = 0;
     cpu->DebugFunc = 9;
+    //if(inst == 0xe8bd4004){printf("IF:%x, IE:%x\n", MemRead8(0x4000200), MemRead8(0x4000202));}
     if(L_bit){
         //LDM
         for(shift = 0;shift < 16;shift++){
             if(U_bit){
+                //if(inst == 0xe8bd4004){printf("IF:%x, IE:%x\n", MemRead8(0x4000200), MemRead8(0x4000202));}
                 if((RegList >> shift) & 0x1){
                     if(P_bit)RWaddr += 4;
                     cpu->Reg[shift] = MemRead32(RWaddr);
