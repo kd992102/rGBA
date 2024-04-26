@@ -206,7 +206,6 @@ uint8_t ChkCPUMode(){
     switch((cpu->CPSR & 0x1F)){
         case 0x10:
             //User
-            printf("[USER] SPSR:%08x\n", cpu->SPSR);
             cpu->CpuMode = USER;
             return USER;
         case 0x11:
@@ -282,7 +281,6 @@ uint8_t ChkCPUMode(){
 
 void ArmModeDecode(uint32_t inst){
     cpu->Cond = (inst >> 28) & 0xf;
-    if(inst == 0xe3a0c0d3)printf("here\n");
     if(CheckCond(cpu->CPSR, cpu->Cond)){
         switch(((inst >> 26) & 0x3)){
             case 0:
@@ -291,7 +289,6 @@ void ArmModeDecode(uint32_t inst){
                 }
                 else{
                     if((((inst >> 4) & 0xf) == 0xb || ((inst >> 4) & 0xf) == 0xf || ((inst >> 4) & 0xf) == 0xd) && ((inst >> 25) & 0x1) == 0 && (((inst >> 24) & 0x1) >= ((inst >> 21) & 0x1))){
-                        if(inst == 0xe3a0c0d3)printf("SDTS here\n");
                         ArmSDTS(inst);
                     }
                     else if(((inst >> 4) & 0xf) == 9){
@@ -301,7 +298,6 @@ void ArmModeDecode(uint32_t inst){
                         else{ArmDataProc(inst);}
                     }
                     else{
-                        if(inst == 0xe3a0c0d3)printf("ALU here\n");
                         ArmDataProc(inst);
                     }
                 }
@@ -323,9 +319,6 @@ void ArmModeDecode(uint32_t inst){
             default:
                 ErrorHandler(cpu);
         }
-    }
-    else{
-        if(inst == 0xe3a0c0d3)printf("here\n");
     }
 }
 
@@ -480,6 +473,8 @@ void CpuStatus(){
     printf("--------piepeline-------\n");
     printf("Next --> Addr:0x%08x, Instruction:%08x\n", cpu->Reg[PC] - (cpu->InstOffset * 2), cpu->fetchcache[2]);
     printf("fetch:%08x\ndecode:%08x\nexecute:%08x\n", cpu->fetchcache[0], cpu->fetchcache[1], cpu->fetchcache[2]);
+    printf("----------Video----------\n");
+    printf("DISPSTAT:%x, VCOUNT:%x\n", MemRead16(0x4000004), MemRead16(0x4000006));
     printf("--------End-------\n");
 }
 

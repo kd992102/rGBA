@@ -202,7 +202,6 @@ void ArmDataProc(uint32_t inst){
             break;
         case MOV://logical
         //back to swi
-            if(cpu->cycle_sum >= 76444759)printf("Rd:%d, exOpr:%x\n", Rd, exOpr);
             cpu->Reg[Rd] = exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC){
