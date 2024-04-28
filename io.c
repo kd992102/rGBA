@@ -177,7 +177,9 @@ void MemWrite8(uint32_t addr, uint8_t data){
 
 void PPUMemWrite16(uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
-    if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
-    else if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     *((uint16_t *)RelocAddr) = data;
+    /*if(addr == 0x4000202){
+
+    }*/
+    //else{*((uint16_t *)RelocAddr) = data;}
 }

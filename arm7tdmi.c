@@ -484,7 +484,7 @@ void IRQ_checker(uint32_t CPSR){
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                printf("IRQ occured\n");
+                printf("IRQ Vblank occured\n");
                 IRQ_handler();
             }
         }
@@ -493,6 +493,7 @@ void IRQ_checker(uint32_t CPSR){
         if(cpu->Halt){
             if(MemRead8(0x4000208)){//IME
                 if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
+                    printf("IRQ Halt occured\n");
                     IRQ_handler();
                 }
             }
