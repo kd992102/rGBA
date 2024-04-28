@@ -21,7 +21,7 @@ DMA DMA_CH;
 uint32_t bios_size;
 uint32_t rom_size;
 static const char bios_file_name[] = "gba_bios.bin";
-static const char rom_file_name[] = "pok_g_386.gba";
+static const char rom_file_name[] = "haltcnt.gba";
 
 int main(int argc, char *argv[]){
     void *screen;
@@ -116,21 +116,17 @@ int main(int argc, char *argv[]){
 
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
-            //75853094, 76383052, 76352772, 76367197, 76367237, 76375306, 76452313, 76394991
-            //0x800107e->0x480f, 76367350, 76391055, 76394846, 76395608, 76396239
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
             // && cpu->fetchcache[2] == 0xbc30
             //According to the instruction cycles update the PPU 
             for(int i=0;i<cpu->cycle;i++){
+                if((cpu->cycle_sum) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
                 cpu->cycle_sum += 1;
-                if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
             }
-            if(cpu->fetchcache[2] == 0xe92d5800){
+            if(cpu->fetchcache[2]==0xe12fff1e){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
-                printf("CPSR:%x, Halt:%d\n", cpu->CPSR, cpu->Halt);
-                //printf("IF:%x, IE:%x\n", MemRead8(0x4000200), MemRead8(0x4000202));
                 getchar();
             }
             //76367197,76367267
@@ -138,7 +134,7 @@ int main(int argc, char *argv[]){
         }
         else if(cpu->Halt == 1){
             cpu->cycle_sum += 1;
-            if((cpu->cycle_sum - 393) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
+            if((cpu->cycle_sum) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
         }
         //if Halt enable
         Timer_Clock(cpu->cycle);
