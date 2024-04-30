@@ -284,7 +284,7 @@ void ArmModeDecode(uint32_t inst){
     if(CheckCond(cpu->CPSR, cpu->Cond)){
         switch(((inst >> 26) & 0x3)){
             case 0:
-                if(inst == 0xe3a0c0d3)printf("case 0 here\n");
+                //if(inst == 0xe3a0c0d3)printf("case 0 here\n");
                 if(((inst >> 4) & 0xffffff) == 0x12fff1){
                     ArmBX(inst);
                 }
@@ -502,6 +502,7 @@ void IRQ_checker(uint32_t CPSR){
 }
 
 void IRQ_handler(){
+    printf("VCOUNT:%08x\n", MemRead16(0x4000006));
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
@@ -513,5 +514,4 @@ void IRQ_handler(){
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x8);
     cpu->Reg[PC] += 0x8;
     cpu->Halt = 0;
-    //printf("cycle:%ld\n", cpu->cycle_sum);
 }

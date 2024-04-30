@@ -57,6 +57,7 @@ void ThumbCondB(uint16_t inst){
     }
 }
 void ThumbSWI(uint16_t inst){
+    printf("Thumb SWI %ld\n", cpu->cycle_sum);
     uint32_t swi_num = inst & 0xff;
     cpu->DebugFunc = 27;
     cpu->saveMode = THUMB_MODE;

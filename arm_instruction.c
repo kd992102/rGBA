@@ -124,8 +124,10 @@ void ArmDataProc(uint32_t inst){
             if(Rd == PC){
                 cpu->cycle += 2;
                 if(Rn == LR){
-                    cpu->CPSR = cpu->SPSR_irq;
-                    //printf("SPSR_IRQ:%x\n", cpu->SPSR_irq);
+                    if(cpu->Cmode == IRQ){
+                        cpu->CPSR = cpu->SPSR_irq;
+                        cpu->CPSR &= 0xffffff7f;
+                    }
                     if((cpu->CPSR >> 5) & 0x1)cpu->dMode = THUMB_MODE;
                     if(cpu->dMode == THUMB_MODE){
                         cpu->InstOffset = 0x2;
