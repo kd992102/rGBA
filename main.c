@@ -122,8 +122,8 @@ int main(int argc, char *argv[]){
                 if((cpu->cycle_sum) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
                 cpu->cycle_sum += 1;
             }
-            //cpu->cycle_sum >= 1730208
-            if(cpu->cycle_sum >= 76121049){
+            //cpu->cycle_sum >= 76122822
+            if(cpu->cycle_sum >= 76121010){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
                 getchar();
@@ -138,6 +138,9 @@ int main(int argc, char *argv[]){
                 cpu->Halt == 0;
                 IRQ_handler();
             }
+            /*else{
+                MemWrite16(0x4000202, 0);
+            }*/
         }
         //if Halt enable
         Timer_Clock(cpu->cycle);
