@@ -563,11 +563,6 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
     uint8_t disp_vcount = (reg_status >> 8) & 0xff;
     uint32_t horizon = 0;
     uint32_t vertical = 0;
-    if(reg_vcount == 0xa0){
-        if(((reg_status >> 3) & 1)){
-            PPUMemWrite16(0x4000202, 0x1);
-        }
-    }
     if(reg_vcount == disp_vcount){
         reg_vc_match = 1;
         //printf("v-count match, reg:%d, disp:%d\n", reg_vcount, disp_vcount);
@@ -616,6 +611,11 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
             //SDL_Delay(10);
             //getchar();
             reg_vcount = 0;
+        }
+        if(reg_vcount == 0xa0){
+            if(((reg_status >> 3) & 1)){
+                PPUMemWrite16(0x4000202, 0x1);
+            }
         }
         PPUMemWrite16(VCOUNT, reg_vcount);
     }
