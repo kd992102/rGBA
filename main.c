@@ -21,7 +21,7 @@ DMA DMA_CH;
 uint32_t bios_size;
 uint32_t rom_size;
 static const char bios_file_name[] = "gba_bios.bin";
-static const char rom_file_name[] = "haltcnt.gba";
+static const char rom_file_name[] = "pok_g_386.gba";
 
 int main(int argc, char *argv[]){
     void *screen;
@@ -123,14 +123,11 @@ int main(int argc, char *argv[]){
                 cpu->cycle_sum += 1;
             }
             //cpu->cycle_sum >= 1730208
-            if(cpu->cycle_sum >= 78017800){
+            if(cpu->cycle_sum >= 76121049){
                 CpuStatus();
                 printf("cycle:%ld\n", cpu->cycle_sum);
-                //printf("0x300:0x%08x, HALTCNT:0x%08x\n", MemRead8(0x4000300), MemRead8(0x4000301));
-                //printf("IME:0x%08x\n", MemRead8(0x4000208));
                 getchar();
             }
-            //76367197,76367267
             RecoverReg(cpu->Cmode);
             IRQ_checker(cpu->CPSR);
         }

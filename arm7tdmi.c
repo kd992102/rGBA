@@ -502,7 +502,7 @@ void IRQ_checker(uint32_t CPSR){
 }
 
 void IRQ_handler(){
-    printf("VCOUNT:%08x\n", MemRead16(0x4000006));
+    //printf("VCOUNT:%08x\n", MemRead16(0x4000006));
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
     cpu->SPSR_irq = cpu->CPSR;
