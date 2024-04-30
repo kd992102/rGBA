@@ -259,6 +259,7 @@ void ArmBX(uint32_t inst){
     uint8_t Rn = inst & 0xf;
     cpu->DebugFunc = 4;
     cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
+    if(cpu->Reg[PC] == 0x8000000)printf("Here!!!\n");
     if(cpu->Reg[Rn] & 0x1 == 0x1){
         cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);
@@ -268,6 +269,7 @@ void ArmBX(uint32_t inst){
     }
     else{
         cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
+        if(cpu->Reg[PC] == 0x8000000)printf("0x%08x\n", MemRead32(cpu->Reg[PC]));
         cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
         cpu->Reg[PC] += 0x4;
         cpu->dMode = ARM_MODE;
