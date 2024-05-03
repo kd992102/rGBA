@@ -605,11 +605,8 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
         reg_status = MemRead16(DISPSTAT);
         if(reg_vcount == 228){
             SDL_UnlockTexture(texture);
-            //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
-            //SDL_Delay(10);
-            //getchar();
             reg_vcount = 0;
         }
         if(reg_vcount == 0xa0){

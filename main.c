@@ -138,9 +138,6 @@ int main(int argc, char *argv[]){
                 cpu->Halt == 0;
                 IRQ_handler();
             }
-            /*else{
-                MemWrite16(0x4000202, 0);
-            }*/
         }
         //if Halt enable
         Timer_Clock(cpu->cycle);
