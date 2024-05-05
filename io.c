@@ -109,12 +109,8 @@ void MemWrite32(uint32_t addr, uint32_t data){
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
-        printf("LYC:%x\n", data);
         tmp = *((uint32_t *)RelocAddr);
         *((uint32_t *)RelocAddr) = ((data & 0xff00fff8)|(tmp & 0xff0007));
-    }
-    else if(addr == 0x4000005){
-        printf("LYC:%x\n", data);
     }
     else if(addr >= 0x4000200 && addr < 0x4000204){
         MemWrite8(addr,data & 0xff);
@@ -131,12 +127,8 @@ void MemWrite16(uint32_t addr, uint16_t data){
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
-        printf("LYC:%x\n", data);
         tmp = *((uint16_t *)RelocAddr);
         *((uint16_t *)RelocAddr) = ((data & 0xfff8)|(tmp & 0x7));
-    }
-    else if(addr == 0x4000005){
-        printf("LYC:%x\n", data);
     }
     else if(addr == 0x4000006){
         tmp = *((uint16_t *)RelocAddr);
@@ -157,12 +149,8 @@ void MemWrite8(uint32_t addr, uint8_t data){
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 2;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF)cpu->cycle += 4;
     if(addr == 0x4000004){
-        printf("LYC:%x\n", data);
         tmp = *((uint8_t *)RelocAddr);
         *((uint8_t *)RelocAddr) = ((data & 0xf8)|(tmp & 0x7));
-    }
-    else if(addr == 0x4000005){
-        printf("LYC:%x\n", data);
     }
     else if(addr == 0x4000006){
         tmp = *((uint8_t *)RelocAddr);
@@ -183,6 +171,7 @@ void MemWrite8(uint32_t addr, uint8_t data){
     }
     else if(addr == 0x4000301){
         cpu->Halt = 1;
+        //printf("CPU HALT\n");
     }
     else{*((uint8_t *)RelocAddr) = data;}
 }
@@ -190,8 +179,4 @@ void MemWrite8(uint32_t addr, uint8_t data){
 void PPUMemWrite16(uint32_t addr, uint16_t data){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
     *((uint16_t *)RelocAddr) = data;
-    /*if(addr == 0x4000202){
-
-    }*/
-    //else{*((uint16_t *)RelocAddr) = data;}
 }

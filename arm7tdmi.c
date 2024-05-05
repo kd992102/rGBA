@@ -430,6 +430,9 @@ uint32_t CpuExecute(uint32_t inst)
             ErrorHandler(cpu);
             //exit(1);
     }
+    /*if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
+    else{cpu->InstOffset = 0x4;}
+    cpu->Reg[PC] += cpu->InstOffset;*/
 }
 
 void CpuStatus(){
@@ -443,6 +446,7 @@ void CpuStatus(){
     printf("\n--------status-------\n");
     printf("CPSR:%08x\n", cpu->CPSR);
     printf("SPSR:%08x\n", cpu->SPSR);
+    printf("SPSR_irq:%x\n", cpu->SPSR_irq);
     printf("R13_svc:%08x\n", cpu->Reg_svc[0]);
     switch(cpu->Cmode){
         case USER:
@@ -484,30 +488,35 @@ void IRQ_checker(uint32_t CPSR){
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                printf("IRQ Vblank occured\n");
+                //printf("IRQ Vblank occured\n");
                 IRQ_handler();
+                //PPUMemWrite16(0x4000202, 0x0);
+                //CpuStatus();
+                //getchar();
             }
         }
     }
-    else{
+    /*else{
         if(cpu->Halt){
             if(MemRead8(0x4000208)){//IME
                 if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
                     printf("IRQ Halt occured\n");
                     IRQ_handler();
+                    PPUMemWrite16(0x4000202, 0x0);
                 }
             }
         }
-    }
+    }*/
 }
 
 void IRQ_handler(){
-    //printf("VCOUNT:%08x\n", MemRead16(0x4000006));
+    //if(cpu->dMode == ARM_MODE)cpu->Reg_irq[1] = cpu->Reg[PC] - 0x4;//next instruction
+    //else{cpu->Reg_irq[1] = cpu->Reg[PC] - 0x2;}
+    cpu->Reg_irq[1] = cpu->Reg[PC];
+    cpu->SPSR_irq = cpu->CPSR;
     cpu->dMode = ARM_MODE;
     cpu->CPSR |= 0x80;
-    cpu->SPSR_irq = cpu->CPSR;
     cpu->CPSR = (cpu->CPSR & 0xffffffc0) | (0x12);
-    cpu->Reg_irq[1] = cpu->Reg[PC];//next instruction
     cpu->Reg[PC] = 0x18;
     cpu->fetchcache[2] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC] + 0x4);
