@@ -112,33 +112,30 @@ int main(int argc, char *argv[]){
             cpu->Cmode = ChkCPUMode();
             cpu->CurrentInst = cpu->fetchcache[2];
             CpuExecute(cpu->fetchcache[2]);
-
             if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
             else{cpu->InstOffset = 0x4;}
             cpu->Reg[PC] += cpu->InstOffset;
             PreFetch(cpu->Reg[PC]);//fetch new instruction
             //According to the instruction cycles update the PPU 
             for(int i=0;i<cpu->cycle;i++){
-                if((cpu->cycle_sum) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
+                if((cpu->cycle_sum % 1232) == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
                 cpu->cycle_sum += 1;
             }
-            //cpu->cycle_sum >= 76122822
-            if(cpu->cycle_sum >= 76121010){
+            //cpu->cycle_sum >= 76122822、76121010、1730674、2006941、1730860
+            /*if(cpu->cycle_sum >= 1730752){
                 CpuStatus();
+                printf("0x3007ff8:%x\n", MemRead8(0x3007ff0));
                 printf("cycle:%ld\n", cpu->cycle_sum);
+                printf("IME:%x, IE:%x, IF:%x\n", MemRead8(0x4000208), MemRead8(0x4000200), MemRead8(0x4000202));
                 getchar();
-            }
+            }*/
             RecoverReg(cpu->Cmode);
-            IRQ_checker(cpu->CPSR);
         }
         else if(cpu->Halt == 1){
+            if((cpu->cycle_sum % 1232) == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
             cpu->cycle_sum += 1;
-            if((cpu->cycle_sum) % 1232 == 0)PPU_update((cpu->cycle_sum), texture, renderer, screen);
-            if(MemRead16(VCOUNT) == 0xa0){
-                cpu->Halt == 0;
-                IRQ_handler();
-            }
         }
+        IRQ_checker(cpu->CPSR);
         //if Halt enable
         Timer_Clock(cpu->cycle);
         cpu->cycle = 0;

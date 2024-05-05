@@ -109,6 +109,7 @@ void ArmDataProc(uint32_t inst){
     exOpr = BarrelShifter(Opr2, (inst >> 25) & 0x1, exOpr);
     switch(Opcode){
         case AND://logical
+            //printf("AND exOpr:%x\n", exOpr);
             cpu->Reg[Rd] = cpu->Reg[Rn] & exOpr;
             if(S_bit)CPSRUpdate(LOG, cpu->Reg[Rd], cpu->Reg[Rn], exOpr);
             if(Rd == PC){cpu->cycle += 2;}
