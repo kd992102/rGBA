@@ -554,7 +554,7 @@ void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* rende
     DrawSprite(renderer);
 }*/
 
-void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
+void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
     uint16_t reg_vcount = MemRead8(VCOUNT);
     uint16_t reg_status = MemRead16(DISPSTAT);
     uint8_t reg_hblank = 0;
@@ -563,7 +563,7 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
     uint8_t disp_vcount = (reg_status >> 8) & 0xff;
     uint32_t horizon = 0;
     uint32_t vertical = 0;
-    if(reg_vcount == disp_vcount){
+    if(reg_vcount == disp_vcount && disp_vcount != 0){
         reg_vc_match = 1;
         //printf("v-count match, reg:%d, disp:%d\n", reg_vcount, disp_vcount);
     }
@@ -571,18 +571,16 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
 
     if(reg_vcount >= VDRAW && reg_vcount < 228){
         reg_vblank = 1;
-        //if(reg_vcount == VDRAW)reg_status |= (1 << 3);
-        //DMA_Transfer(DMA_CH, 1);
+        DMA_Transfer(DMA_CH, 1);
     }
     else{reg_vblank = 0;}
 
-    /*if(horizon > HBLANK_ZERO_CYCLE){
+    if(horizon > HBLANK_ZERO_CYCLE){
         reg_hblank = 1;
         DMA_Transfer(DMA_CH, 2);
-    }*/
-    /*else{
-        reg_hblank = 0;
-    }*/
+    }
+    else{reg_hblank = 0;}
+
     if(horizon == 0){
         if(reg_vcount == 0){
             uint32_t addr;
@@ -597,23 +595,22 @@ void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, vo
         }
         if(reg_vcount < VDRAW ){
             DrawScanLine(reg_vcount, texture, renderer, screen);
-            reg_hblank = 1;
-            //DMA_Transfer(DMA_CH, 2);
         }
         reg_vcount += 1;
         reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
         if(reg_vcount == VDRAW)reg_status |= (1 << 3);
         if(reg_vcount == 228){
-            //printf("Draw\n");
             SDL_UnlockTexture(texture);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
-            //getchar();
             reg_vcount = 0;
         }
         if((reg_status & (1 << 3))){
             PPUMemWrite16(0x4000202, 0x1);
-            reg_status &= 0xfff7;
+            //reg_status &= 0xfff7;
+        }
+        else if((reg_status & (1 << 4))){
+            PPUMemWrite16(0x4000202, 0x1);
         }
         PPUMemWrite16(DISPSTAT, reg_status);
         PPUMemWrite16(VCOUNT, reg_vcount);

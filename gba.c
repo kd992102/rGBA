@@ -35,6 +35,7 @@ void InitCpu(uint32_t BaseAddr){
 
 void Reset(){
     cpu->cycle = 0;
+    cpu->frame_cycle = 0;
     cpu->cycle_sum = 0;
     cpu->Cmode = 0x13;//SVC mode
     cpu->CPSR = 0x13;
