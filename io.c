@@ -59,7 +59,6 @@ uint32_t MemoryAddrReloc(uint32_t addr){
         case 0xE000000:
             //ErrorHandler(cpu);
             if((addr ^ GAMEROM_SDRAM_BASE) < GAME_SRAM_MEM_SIZE){
-                //printf("In if %x\n", (addr));
                 return (uint32_t)(Mem->Game_SRAM) + (addr - GAMEROM_SDRAM_BASE);
             }
             break;
@@ -78,7 +77,6 @@ uint32_t MemoryAddrReloc(uint32_t addr){
 
 uint32_t MemRead32(uint32_t addr){
     uint32_t RelocAddr = MemoryAddrReloc(addr);
-    //if(addr >= 0x0 && addr <= 0E010000)
     if(addr >= 0x2000000 && addr <= 0x203FFFF)cpu->cycle += 5;
     if(addr >= 0x5000000 && addr <= 0x6017FFF)cpu->cycle += 1;
     if(addr >= 0x8000000 && addr <= 0xDFFFFFF){

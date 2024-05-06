@@ -133,4 +133,4 @@ void DrawOBJwindow(SDL_Renderer* renderer, uint16_t vcount, void *screen);
 void DrawSprite(SDL_Renderer* renderer, uint8_t prio, uint16_t vcount, void *screen);
 void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
 void PPUInit(SDL_Renderer* renderer, SDL_Window* window, SDL_Texture* texture);
-void PPU_update(uint32_t cycle, SDL_Texture* texture, SDL_Renderer* renderer, void *screen);
+void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen);

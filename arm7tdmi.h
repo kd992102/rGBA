@@ -58,6 +58,7 @@ typedef struct arm7tdmi{
     uint8_t InstOffset;
     uint32_t fetchcache[3];
     uint64_t cycle;
+    uint16_t frame_cycle;
     uint64_t cycle_sum;
     uint32_t Cmode;
     uint32_t CurrentInst;
