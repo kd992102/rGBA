@@ -15,6 +15,7 @@
         "stdio.h": "c",
         "algorithm": "c",
         "ppu.h": "c",
-        "dma.h": "c"
+        "dma.h": "c",
+        "arm_instruction.h": "c"
     }
 }

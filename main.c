@@ -135,7 +135,7 @@ int main(int argc, char *argv[]){
         else if(cpu->Halt == 1){
             cpu->frame_cycle += 1;
             if(cpu->frame_cycle >= 1232){
-                if(cpu->cycle_sum >= 393)PPU_update(texture, renderer, screen);
+                PPU_update(texture, renderer, screen);
                 cpu->cycle_sum += cpu->frame_cycle;
                 cpu->frame_cycle = 0;
             }

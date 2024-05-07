@@ -215,11 +215,13 @@ void ArmDataProc(uint32_t inst){
                 cpu->dMode = cpu->saveMode;
                 if(cpu->dMode == THUMB_MODE){
                     cpu->InstOffset = 0x2;
+                    pipeline_flush(cpu);
                     cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
                     cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + cpu->InstOffset);
                 }
                 else{
                     cpu->InstOffset = 0x4;
+                    pipeline_flush(cpu);
                     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
                     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + cpu->InstOffset);
                 }
@@ -249,6 +251,7 @@ void ArmBranch(uint32_t inst){
         cpu->Reg[LR] = cpu->Reg[PC] - 0x4;//next instruction
     }
     cpu->Reg[PC] = cpu->Reg[PC] + (int32_t)offset;
+    pipeline_flush(cpu);
     cpu->fetchcache[1] = MemRead32(cpu->Reg[PC]);
     cpu->fetchcache[0] = MemRead32(cpu->Reg[PC] + 0x4);
     cpu->Reg[PC] += 0x4;
@@ -260,6 +263,7 @@ void ArmBX(uint32_t inst){
     uint8_t Rn = inst & 0xf;
     cpu->DebugFunc = 4;
     cpu->Reg[PC] = cpu->Reg[Rn] & 0xfffffffe;
+    pipeline_flush(cpu);
     if(cpu->Reg[Rn] & 0x1 == 0x1){
         cpu->fetchcache[1] = MemRead16(cpu->Reg[PC]);
         cpu->fetchcache[0] = MemRead16(cpu->Reg[PC] + 0x2);

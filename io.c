@@ -169,7 +169,6 @@ void MemWrite8(uint32_t addr, uint8_t data){
     }
     else if(addr == 0x4000301){
         cpu->Halt = 1;
-        //printf("CPU HALT\n");
     }
     else{*((uint8_t *)RelocAddr) = data;}
 }

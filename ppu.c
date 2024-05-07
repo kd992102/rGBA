@@ -571,13 +571,13 @@ void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
 
     if(reg_vcount >= VDRAW && reg_vcount < 228){
         reg_vblank = 1;
-        DMA_Transfer(DMA_CH, 1);
+        //DMA_Transfer(DMA_CH, 1);
     }
     else{reg_vblank = 0;}
 
     if(horizon > HBLANK_ZERO_CYCLE){
         reg_hblank = 1;
-        DMA_Transfer(DMA_CH, 2);
+        //DMA_Transfer(DMA_CH, 2);
     }
     else{reg_hblank = 0;}
 
@@ -599,6 +599,7 @@ void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
         reg_vcount += 1;
         reg_status = ((reg_status & 0xfff8) | (reg_vc_match << 2) | (reg_hblank << 1) | (reg_vblank));
         if(reg_vcount == VDRAW)reg_status |= (1 << 3);
+        if(reg_vcount == (VDRAW + 1))reg_status &= 0xfff7;
         if(reg_vcount == 228){
             SDL_UnlockTexture(texture);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -607,10 +608,12 @@ void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
         }
         if((reg_status & (1 << 3))){
             PPUMemWrite16(0x4000202, 0x1);
-            //reg_status &= 0xfff7;
         }
         else if((reg_status & (1 << 4))){
-            PPUMemWrite16(0x4000202, 0x1);
+            PPUMemWrite16(0x4000202, 0x2);
+        }
+        else if((reg_status & (1 << 5))){
+            PPUMemWrite16(0x4000202, 0x3);
         }
         PPUMemWrite16(DISPSTAT, reg_status);
         PPUMemWrite16(VCOUNT, reg_vcount);
