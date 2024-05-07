@@ -12,24 +12,10 @@
 extern Gba_Cpu *cpu;
 extern GbaMem *Mem;
 
-uint32_t SPSR_switch(){
-    switch(cpu->Cmode){
-        case SYSTEM:
-            return cpu->SPSR;
-        case SVC:
-            return cpu->SPSR_svc;
-        case ABT:
-            return cpu->SPSR_abt;
-        case FIQ:
-            return cpu->SPSR_fiq;
-        case IRQ:
-            return cpu->SPSR_irq;
-        case USER:
-            return cpu->SPSR;
-        case UNDEF:
-            return cpu->SPSR_und;
-    }
-    return cpu->SPSR;
+void pipeline_flush(Gba_Cpu *cpu){
+    cpu->fetchcache[0] = 0;
+    cpu->fetchcache[1] = 0;
+    cpu->fetchcache[2] = 0;
 }
 
 uint8_t CheckCond(){
@@ -428,11 +414,7 @@ uint32_t CpuExecute(uint32_t inst)
         default:
             printf("[Error]->CpuExecute\n");
             ErrorHandler(cpu);
-            //exit(1);
     }
-    /*if(cpu->dMode == THUMB_MODE)cpu->InstOffset = 0x2;
-    else{cpu->InstOffset = 0x4;}
-    cpu->Reg[PC] += cpu->InstOffset;*/
 }
 
 void CpuStatus(){
@@ -484,34 +466,16 @@ void CpuStatus(){
 }
 
 void IRQ_checker(uint32_t CPSR){
-    //printf("IRQ checker -> %ld\n", cpu->cycle_sum);
     if(!((CPSR >> 7) & 0x1)){
         if(MemRead8(0x4000208)){//IME
             if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                //printf("IRQ Vblank occured\n");
                 IRQ_handler();
-                //PPUMemWrite16(0x4000202, 0x0);
-                //CpuStatus();
-                //getchar();
             }
         }
     }
-    /*else{
-        if(cpu->Halt){
-            if(MemRead8(0x4000208)){//IME
-                if((MemRead8(0x4000200) & MemRead8(0x4000202))){//IF、IE
-                    printf("IRQ Halt occured\n");
-                    IRQ_handler();
-                    PPUMemWrite16(0x4000202, 0x0);
-                }
-            }
-        }
-    }*/
 }
 
 void IRQ_handler(){
-    //if(cpu->dMode == ARM_MODE)cpu->Reg_irq[1] = cpu->Reg[PC] - 0x4;//next instruction
-    //else{cpu->Reg_irq[1] = cpu->Reg[PC] - 0x2;}
     cpu->Reg_irq[1] = cpu->Reg[PC];
     cpu->SPSR_irq = cpu->CPSR;
     cpu->dMode = ARM_MODE;

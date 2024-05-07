@@ -89,7 +89,7 @@ enum IRQ_VECTOR {
 uint8_t CheckCond();
 void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
 
-uint32_t SPSR_switch();
+void pipeline_flush(Gba_Cpu *cpu);
 void ErrorHandler(Gba_Cpu *cpu);
 void RecoverReg(uint8_t Cmode);
 uint8_t ChkCPUMode();
