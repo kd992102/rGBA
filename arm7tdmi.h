@@ -86,6 +86,41 @@ enum IRQ_VECTOR {
     GAMEPAK = (1<<13)
 };
 
+static int arm_signed_mul_extra_cycles(uint32_t Rd)
+{
+    uint32_t temp = cpu->Reg[Rd];
+
+    if (temp & BIT(31))
+        temp = ~temp; // All 0 or all 1
+
+    if (temp & 0xFFFFFF00)
+    {
+        if (temp & 0xFFFF0000)
+        {
+            if (temp & 0xFF000000){return 4;}
+            else{return 3;}
+        }
+        else{return 2;}
+    }
+    else{return 1;}
+}
+
+static int arm_unsigned_mul_extra_cycles(uint32_t Rd)
+{
+    uint32_t temp = cpu->Reg[Rd]; // All 0
+
+    if (temp & 0xFFFFFF00)
+    {
+        if (temp & 0xFFFF0000)
+        {
+            if (temp & 0xFF000000){return 4;}
+            else{return 3;}
+        }
+        else{return 2;}
+    }
+    else{return 1;}
+}
+
 uint8_t CheckCond();
 void CPSRUpdate(uint8_t Opcode, uint32_t result, uint32_t parameterA, uint32_t parameterB);
 
