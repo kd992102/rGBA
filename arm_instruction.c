@@ -409,7 +409,7 @@ void ArmMULL(uint32_t inst){
     }
 }
 void ArmSWI(uint32_t inst){
-    printf("Arm SWI\n");
+    //printf("Arm SWI\n");
     cpu->DebugFunc = 11;
     uint32_t swi_num = inst & 0xffffff;
     cpu->Reg[LR] = cpu->Reg[PC] + 0x4;
