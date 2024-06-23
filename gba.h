@@ -5,3 +5,5 @@ typedef enum InterruptMask IntMask;
 void InitCpu(uint32_t BaseAddr);
 //Exeception
 void Reset();
+
+void RunFrame();//in ppu.c

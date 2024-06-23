@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <time.h>
+#include "gba.h"
+#include "arm7tdmi.h"
 #include "memory.h"
 #include "io.h"
 #include "dma.h"
@@ -553,6 +555,10 @@ void DrawScanLine(uint16_t reg_vcount, SDL_Texture* texture, SDL_Renderer* rende
 /*void DrawScreen(SDL_Renderer *renderer){
     DrawSprite(renderer);
 }*/
+
+void RunFrame(){
+    CpuExecuteFrame(FRAME_CYCLE);
+}
 
 void PPU_update(SDL_Texture* texture, SDL_Renderer* renderer, void *screen){
     uint16_t reg_vcount = MemRead8(VCOUNT);

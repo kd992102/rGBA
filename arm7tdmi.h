@@ -4,6 +4,8 @@
 #define LOG 2
 #define MOVS 3
 
+#define BIT(a) ((1 >> a) & 1) 
+
 enum DECODE_MODE{
     ARM_MODE = 0,THUMB_MODE
 };
@@ -88,7 +90,7 @@ enum IRQ_VECTOR {
 
 static int arm_signed_mul_extra_cycles(uint32_t Rd)
 {
-    uint32_t temp = cpu->Reg[Rd];
+    uint32_t temp = Rd;
 
     if (temp & BIT(31))
         temp = ~temp; // All 0 or all 1
@@ -107,7 +109,7 @@ static int arm_signed_mul_extra_cycles(uint32_t Rd)
 
 static int arm_unsigned_mul_extra_cycles(uint32_t Rd)
 {
-    uint32_t temp = cpu->Reg[Rd]; // All 0
+    uint32_t temp = Rd; // All 0
 
     if (temp & 0xFFFFFF00)
     {
@@ -128,7 +130,10 @@ void pipeline_flush(Gba_Cpu *cpu);
 void ErrorHandler(Gba_Cpu *cpu);
 void RecoverReg(uint8_t Cmode);
 uint8_t ChkCPUMode();
-uint32_t CpuExecute(uint32_t inst);
+void CpuExecuteArm(uint32_t cycles);
+void CpuExecuteThumb(uint32_t cycles);
+uint32_t CpuExecute(uint32_t cycles);
+uint32_t CpuExecuteFrame(uint32_t clocks);
 void CpuStatus();
 void PreFetch(uint32_t Addr);
 void ThumbModeDecode(uint16_t inst);
