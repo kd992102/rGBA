@@ -12,6 +12,9 @@
 extern Gba_Cpu *cpu;
 extern GbaMem *Mem;
 
+uint32_t last_cycle = 0;
+uint32_t next_execute_cycle = 1;
+
 void pipeline_flush(Gba_Cpu *cpu){
     cpu->fetchcache[0] = 0;
     cpu->fetchcache[1] = 0;
@@ -397,24 +400,34 @@ void PreFetch(uint32_t Addr){
     cpu->cycle += 1;
 }
 
-uint32_t CpuExecute(uint32_t inst)
+uint32_t CpuExecute(uint32_t cycles)
 {
-    if(inst == 0x0){
-        cpu->cycle += 1;
-        return 0;
-    }
     switch(cpu->dMode){
         case ARM_MODE:
-            cpu->Cond = (inst >> 28) & 0xf;
-            ArmModeDecode(inst);
-            return 0;
+            CpuExecuteArm(cycles);
+            break;
         case THUMB_MODE:
-            ThumbModeDecode(inst);
-            return 0;
-        default:
-            printf("[Error]->CpuExecute\n");
-            ErrorHandler(cpu);
+            CpuExecuteThumb(cycles);
+            break;
     }
+}
+
+uint32_t CpuExecuteFrame(uint32_t total_cycles){
+    uint32_t execute_cycle, residual_cycle;
+    uint8_t is_execute = 0;
+    total_cycles += last_cycle;
+
+    while(total_cycles > 0){
+        /*if(IRQ_checker(cpu->CPSR)){
+
+        }
+        else{
+            residual_cycle = CpuExecute(next_execute_cycle);
+            execute_cycle = next_execute_cycle - residual_cycle;
+        }*/
+    }
+    return 0;
+    //return exe
 }
 
 void CpuStatus(){

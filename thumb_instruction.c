@@ -570,3 +570,7 @@ void ThumbIMM(uint16_t inst){
     }
     if(Rd == PC)cpu->cycle += 2;
 }
+
+void CpuExecuteThumb(uint32_t cycles){
+    uint16_t instruction = MemRead16(cpu->Reg[PC]);//Fetch Instruction
+}

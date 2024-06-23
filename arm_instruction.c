@@ -322,7 +322,9 @@ void ArmMUL(uint32_t inst){
         //MLA
         cpu->Reg[Rd] = (cpu->Reg[Rm] * cpu->Reg[Rs]) + cpu->Reg[Rn];
         if(S_bit)CPSRUpdate(A_ADD, cpu->Reg[Rd], cpu->Reg[Rm] * cpu->Reg[Rs], cpu->Reg[Rn]);
+        //1S + m*I cycles
         cpu->cycle += (m + 1);
+        //cpu->cycle += MemoryGetAccessCycles(, 1, cpu->Reg[PC]);
     }
     else{
         //MUL
@@ -631,4 +633,8 @@ void ArmBDT(uint32_t inst){
         }
         cpu->cycle += (n);
     }
+}
+
+void CpuExecuteArm(uint32_t cycles){
+    uint32_t instruction = MemRead32(cpu->Reg[PC]);//Fetch Instruction
 }
