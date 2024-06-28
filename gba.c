@@ -11,15 +11,6 @@ void InitCpu(uint32_t BaseAddr){
     for(int i=0;i<16;i++){
         memset(&cpu->Reg[i],0,4);
     }
-    cpu->cycle = 0;
-    cpu->cycle_sum = 0;
-    cpu->Cmode = 0x13;//SVC mode
-    cpu->CPSR = 0x13;
-    cpu->SPSR_svc = 0x10;
-    cpu->Reg_svc[0] = 0x3007f00;
-    cpu->Reg_svc[1] = 0x8000000;
-    cpu->saveMode = ARM_MODE;
-    cpu->Halt = 0;
     memset(&cpu->CPSR,0,4);
     //change to Supervisor mode
     Reset(cpu);
@@ -37,18 +28,20 @@ void Reset(){
     cpu->cycle = 0;
     cpu->frame_cycle = 0;
     cpu->cycle_sum = 0;
-    cpu->Cmode = 0x13;//SVC mode
-    cpu->CPSR = 0x13;
-    cpu->SPSR_svc = 0x10;
-    cpu->SPSR = 0x10;
-    cpu->SPSR_abt = 0x10;
-    cpu->SPSR_und = 0x10;
-    cpu->SPSR_irq = 0x10;
-    cpu->SPSR_fiq = 0x10;
+    cpu->Cmode = SVC_MODE;//SVC Mode
+    cpu->CPSR = SVC_MODE;//SVC Mode
+    cpu->SPSR_svc = USER_MODE;//USER Mode
+    cpu->SPSR = USER_MODE;//USER Mode
+    cpu->SPSR_abt = USER_MODE;
+    cpu->SPSR_und = USER_MODE;
+    cpu->SPSR_irq = USER_MODE;
+    cpu->SPSR_fiq = USER_MODE;
     cpu->Reg_svc[0] = 0x3007f00;
     cpu->Reg_svc[1] = 0x8000000;
     cpu->saveMode = ARM_MODE;
     cpu->Halt = 0;
+    cpu->CpuMode = SYSTEM_MODE;
+    cpu->dMode = ARM_MODE;
     MemWrite16(0x4000088, 0x200);
     //
 }

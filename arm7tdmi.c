@@ -387,17 +387,16 @@ void ThumbModeDecode(uint16_t inst){
     }
 }
 
-void PreFetch(uint32_t Addr){
+void CpuStep(){
     cpu->fetchcache[2] = cpu->fetchcache[1];
     cpu->CurrentInstAddr[2] = cpu->CurrentInstAddr[1];
     cpu->fetchcache[1] = cpu->fetchcache[0];
     cpu->CurrentInstAddr[1] = cpu->CurrentInstAddr[0];
-    if(cpu->dMode == ARM_MODE)cpu->fetchcache[0] = MemRead32(Addr);
+    if(cpu->dMode == ARM_MODE)cpu->fetchcache[0] = MemRead32(cpu->Reg[PC]);
     else{
-        cpu->fetchcache[0] = MemRead16(Addr);
+        cpu->fetchcache[0] = MemRead16(cpu->Reg[PC]);
     }
-    cpu->CurrentInstAddr[0] = Addr;
-    cpu->cycle += 1;
+    cpu->CurrentInstAddr[0] = cpu->Reg[PC];
 }
 
 uint32_t CpuExecute(uint32_t cycles)

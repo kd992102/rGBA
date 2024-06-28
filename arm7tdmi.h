@@ -1,10 +1,19 @@
 #include <stdint.h>
-#define A_ADD 1
 #define A_SUB 0
+#define A_ADD 1
 #define LOG 2
 #define MOVS 3
 
+#define USER_MODE 16
+#define FIQ_MODE 17
+#define IRQ_MODE 18
+#define SVC_MODE 19
+#define ABT_MODE 23
+#define UNDEF_MODE 27
+#define SYSTEM_MODE 31
+
 #define BIT(a) ((1 >> a) & 1) 
+
 
 enum DECODE_MODE{
     ARM_MODE = 0,THUMB_MODE
@@ -135,7 +144,7 @@ void CpuExecuteThumb(uint32_t cycles);
 uint32_t CpuExecute(uint32_t cycles);
 uint32_t CpuExecuteFrame(uint32_t clocks);
 void CpuStatus();
-void PreFetch(uint32_t Addr);
+void CpuStep();
 void ThumbModeDecode(uint16_t inst);
 void ArmModeDecode(uint32_t inst);
 void IRQ_checker(uint32_t CPSR);

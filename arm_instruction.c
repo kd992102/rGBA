@@ -637,4 +637,6 @@ void ArmBDT(uint32_t inst){
 
 void CpuExecuteArm(uint32_t cycles){
     uint32_t instruction = MemRead32(cpu->Reg[PC]);//Fetch Instruction
+
+    
 }

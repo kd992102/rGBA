@@ -31,8 +31,6 @@ int main(int argc, char *argv[]){
     bios = fopen(bios_file_name, "rb");
     cpu = malloc(sizeof(Gba_Cpu));
     Mem = malloc(sizeof(GbaMem));
-    cpu->CpuMode = SYSTEM;
-    cpu->dMode = ARM_MODE;
     printf("start\n");
     Init_GbaMem();
 
