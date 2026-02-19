@@ -1,22 +1,13 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "build",
-            "command": "C:\\msys64\\mingw64\\bin",
+            "command": "C:\\msys64\\mingw32\\bin\\make.exe",
             "args": [
-                "-fdiagnostics-color=always",
-                "-I",
-                "m32",
-                "src/include",
-                "-L",
-                "src/lib",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
-                "${file}",
-                "-lmingw32",
-                "-lSDL2main",
-                "-lSDL2",
+                "-f",
+                "Makefile.new",
+                "all"
             ],
             "options": {
                 "cwd": "${fileDirname}"
@@ -24,13 +15,16 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "detail": "偵錯工具產生的工作。"
         },
         {
             "type": "cppbuild",
-            "label": "build",
-            "command": "C:\\msys64\\mingw32\\bin",
+            "label": "build-legacy",
+            "command": "C:\\msys64\\mingw32\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
@@ -45,10 +39,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "detail": "編譯器: C:\\msys64\\mingw32\\bin"
         }
     ],

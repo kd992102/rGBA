@@ -1,0 +1,114 @@
+# Makefile for rGBA Emulator - New Architecture
+# Modern, modular design with no global variables
+
+# Compiler and flags
+CC = gcc
+CFLAGS = -Wall -Wextra -O2 -std=c11 -I. -DGBA_DEBUG
+LDFLAGS = -lmingw32 -lSDL2main -lSDL2 -lm
+
+# Directories
+SRC_DIR = .
+OBJ_DIR = obj
+BIN_DIR = bin
+
+# Target executable
+TARGET = $(BIN_DIR)/rGBA.exe
+# Test executable
+TEST_TARGET = $(BIN_DIR)/test_cpu_instructions.exe
+
+# Source files (new architecture)
+SOURCES = \
+	main_new.c \
+	gba_core.c \
+	gba_memory.c \
+	gba_cpu.c \
+	gba_cpu_arm_example.c \
+	gba_cpu_thumb.c
+
+# Test sources
+TEST_SOURCES = \
+	test_cpu_instructions.c \
+	gba_core.c \
+	gba_memory.c \
+	gba_cpu.c \
+	gba_cpu_arm_example.c \
+	gba_cpu_thumb.c
+
+# Object files
+OBJECTS = $(SOURCES:%.c=$(OBJ_DIR)/%.o)
+TEST_OBJECTS = $(TEST_SOURCES:%.c=$(OBJ_DIR)/%.o)
+
+# Header dependencies
+HEADERS = \
+	gba_core.h \
+	gba_cpu_instructions.h
+
+# Default target
+all: directories $(TARGET)
+
+# Create directories
+directories:
+	@if not exist $(OBJ_DIR) mkdir $(OBJ_DIR)
+	@if not exist $(BIN_DIR) mkdir $(BIN_DIR)
+
+# Link executable
+$(TARGET): $(OBJECTS)
+	@echo [LINK] $@
+	@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+	@echo [SUCCESS] Build complete: $@
+
+# Link test executable
+$(TEST_TARGET): $(TEST_OBJECTS)
+	@echo [LINK] $@
+	@$(CC) $(TEST_OBJECTS) -o $@ $(LDFLAGS)
+	@echo [SUCCESS] Test build complete: $@
+
+# Compile source files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+	@echo [CC] $<
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build artifacts
+clean:
+	@echo [CLEAN] Removing build artifacts...
+	@if exist $(OBJ_DIR) rmdir /S /Q $(OBJ_DIR)
+	@if exist $(BIN_DIR) rmdir /S /Q $(BIN_DIR)
+	@echo [CLEAN] Done
+
+# Run the emulator
+run: $(TARGET)
+	@echo [RUN] Starting emulator...
+	@cd $(BIN_DIR) && rGBA.exe
+
+# Build and run tests
+test: directories $(TEST_TARGET)
+	@echo [TEST] Running CPU instruction tests...
+	@cd $(BIN_DIR) && test_cpu_instructions.exe
+
+# Debug build
+debug: CFLAGS += -g -DGBA_DEBUG
+debug: clean all
+
+# Release build (optimized, no debug)
+release: CFLAGS = -Wall -O3 -std=c11 -I. -DNDEBUG
+release: clean all
+
+# Show help
+help:
+	@echo rGBA Emulator - Build System
+	@echo.
+	@echo Targets:
+	@echo   all      - Build the emulator (default)
+	@echo   clean    - Remove build artifacts
+	@echo   run      - Build and run the emulator
+	@echo   test     - Build and run CPU instruction tests
+	@echo   debug    - Build with debug symbols
+	@echo   release  - Build optimized release version
+	@echo   help     - Show this help message
+	@echo.
+	@echo Usage:
+	@echo   make           - Build the project
+	@echo   make clean     - Clean build files
+	@echo   make run       - Build and run
+
+.PHONY: all clean run debug release help directories
