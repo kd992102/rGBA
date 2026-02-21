@@ -21,21 +21,23 @@ uint8_t GBA_MemoryGetAccessCycles(GBA_Core *core, uint32_t address, bool sequent
     
     switch (region) {
         case MEM_REGION_BIOS:
-            return 1;  // BIOS 无等待
+            return 1;  // BIOS: 1 cycle (GBATEK)
             
         case MEM_REGION_EWRAM:
-            return sequential ? 6 : 3;  // 慢速外部 WRAM
+            // EWRAM: 16-bit bus, 3/3/6 for 8/16/32-bit (GBATEK)
+            return 3;  // 簡化版：固定 3 cycles
             
         case MEM_REGION_IWRAM:
-            return 1;  // 快速内部 WRAM
+            return 1;  // IWRAM: 1 cycle (GBATEK)
             
         case MEM_REGION_IO:
-            return 1;  // I/O 寄存器
+            return 1;  // I/O: 1 cycle (GBATEK)
             
         case MEM_REGION_PALETTE:
         case MEM_REGION_VRAM:
         case MEM_REGION_OAM:
-            return sequential ? 2 : 1;  // 视频内存
+            // Video RAM: 16-bit bus, 1/1/2 for 8/16/32-bit (GBATEK)
+            return 1;  // 簡化版：固定 1 cycle (不考慮 32-bit 和 PPU 衝突)
             
         case MEM_REGION_ROM_WS0:
             return sequential ? core->memory.wait_states.ws0_s : 
