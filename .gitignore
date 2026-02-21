@@ -37,6 +37,7 @@
 *.hex
 *.gba
 *.sav
+*.json
 
 # Debug files
 *.dSYM/
