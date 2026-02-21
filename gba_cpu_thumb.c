@@ -1,5 +1,5 @@
 /**
- * THUMB 指令集完整实现
+ * THUMB 指令集完整實現
  * THUMB 是 ARM 的 16 位指令子集
  */
 
@@ -17,7 +17,7 @@ static uint8_t THUMB_CountSetBits(uint32_t value) {
 }
 
 /* ============================================================================
- * THUMB 数据处理指令
+ * THUMB 資料處理指令
  * ============================================================================ */
 
 InstructionResult THUMB_MoveShiftedRegister(GBA_Core *core, uint16_t inst) {
@@ -55,7 +55,7 @@ InstructionResult THUMB_MoveShiftedRegister(GBA_Core *core, uint16_t inst) {
     
     core->cpu.regs.r[Rd] = result;
     
-    // 更新标志位
+    // 更新標誌位
     GBA_CPU_SetFlag_N(&core->cpu, result >> 31);
     GBA_CPU_SetFlag_Z(&core->cpu, result == 0);
     GBA_CPU_SetFlag_C(&core->cpu, carry);
@@ -162,11 +162,11 @@ InstructionResult THUMB_MoveCmpAddSubImm(GBA_Core *core, uint16_t inst) {
  * ============================================================================ */
 
 InstructionResult THUMB_ConditionalBranch(GBA_Core *core, uint16_t inst) {
-    // THUMB 条件分支格式：Bits[15:12]=1101, Bits[11:8]=condition, Bits[7:0]=offset(8-bit signed)
+    // THUMB 條件分支格式：Bits[15:12]=1101, Bits[11:8]=condition, Bits[7:0]=offset(8-bit signed)
     uint8_t cond = (inst >> 8) & 0xF;
     int8_t offset = inst & 0xFF;
     
-    // 检查条件
+    // 檢查條件
     if (!GBA_CPU_CheckCondition(core, (ARM_ConditionCode)cond)) {
         return (InstructionResult) {
             .cycles = 1,
@@ -174,12 +174,12 @@ InstructionResult THUMB_ConditionalBranch(GBA_Core *core, uint16_t inst) {
         };
     }
     
-    // 符号扩展并左移 1 位（offset 是 8 位有符号）
+    // 符號擴充套件並左移 1 位（offset 是 8 位有符號）
     int32_t offset32 = (int32_t)offset << 1;
     
-    // 计算跳转目标
-    // 分支指令跳转到: pc  + offset
-    // (pc 已经是 exec_addr + 4，所以这里已经考虑了pipeline)
+    // 計算跳轉目標
+    // 分支指令跳轉到: pc  + offset
+    // (pc 已經是 exec_addr + 4，所以這裡已經考慮了pipeline)
     uint32_t target_addr = core->cpu.regs.pc + offset32;
     
     // 更新 exec_addr 和 pc
@@ -197,7 +197,7 @@ InstructionResult THUMB_ConditionalBranch(GBA_Core *core, uint16_t inst) {
 InstructionResult THUMB_UnconditionalBranch(GBA_Core *core, uint16_t inst) {
     int16_t offset = inst & 0x7FF;
     
-    // 符号扩展
+    // 符號擴充套件
     if (offset & 0x400) {
         offset |= 0xF800;
     }
@@ -205,7 +205,7 @@ InstructionResult THUMB_UnconditionalBranch(GBA_Core *core, uint16_t inst) {
     // 左移 1 位
     int32_t offset32 = (int32_t)offset << 1;
     
-    // 计算跳转目标
+    // 計算跳轉目標
     uint32_t target_addr = core->cpu.regs.pc + offset32;
     
     // 更新 exec_addr 和 pc
@@ -225,8 +225,8 @@ InstructionResult THUMB_LongBranchLink(GBA_Core *core, uint16_t inst) {
     uint16_t offset = inst & 0x7FF;
     
     if (!is_second_instruction) {
-        // 第一条指令：设置 LR 高位
-        int32_t offset32 = (int32_t)(offset << 21) >> 9;  // 符号扩展并左移 12 位
+        // 第一條指令：設定 LR 高位
+        int32_t offset32 = (int32_t)(offset << 21) >> 9;  // 符號擴充套件並左移 12 位
         core->cpu.regs.r[14] = core->cpu.regs.pc + offset32;
         
         return (InstructionResult) {
@@ -234,10 +234,10 @@ InstructionResult THUMB_LongBranchLink(GBA_Core *core, uint16_t inst) {
             .branch_taken = false
         };
     } else {
-        // 第二条指令：跳转
+        // 第二條指令：跳轉
         uint32_t temp = core->cpu.regs.pc - 2;
         core->cpu.regs.pc = (core->cpu.regs.r[14] + (offset << 1)) & ~1;
-        core->cpu.regs.r[14] = temp | 1;  // 设置 THUMB 位
+        core->cpu.regs.r[14] = temp | 1;  // 設定 THUMB 位
         
         GBA_CPUFlushPipeline(core);
         
@@ -250,7 +250,7 @@ InstructionResult THUMB_LongBranchLink(GBA_Core *core, uint16_t inst) {
 }
 
 /* ============================================================================
- * THUMB 加载/存储指令（占位符实现）
+ * THUMB 載入/儲存指令（佔位符實現）
  * ============================================================================ */
 
 InstructionResult THUMB_ALUOperation(GBA_Core *core, uint16_t inst) {
@@ -398,7 +398,7 @@ InstructionResult THUMB_HiRegisterOps(GBA_Core *core, uint16_t inst) {
             // 保持 THUMB 模式
             core->cpu.regs.pc = target & ~1;
         } else {
-            // 切换到 ARM 模式
+            // 切換到 ARM 模式
             core->cpu.regs.exec_mode = CPU_MODE_ARM;
             core->cpu.regs.cpsr &= ~(1 << 5);
             core->cpu.regs.pc = target & ~3;
@@ -703,19 +703,19 @@ InstructionResult THUMB_MultipleLoadStore(GBA_Core *core, uint16_t inst) {
 InstructionResult THUMB_SoftwareInterrupt(GBA_Core *core, uint16_t inst) {
     uint8_t swi_num = inst & 0xFF;
     
-    // 保存返回地址
+    // 儲存返回地址
     core->cpu.regs.svc.r14 = core->cpu.regs.pc - 2;
     core->cpu.regs.svc.spsr = core->cpu.regs.cpsr;
     
-    // 切换到 Supervisor 模式
+    // 切換到 Supervisor 模式
     GBA_CPU_SwitchMode(core, CPU_STATE_SUPERVISOR);
     core->cpu.regs.cpsr |= (1 << 7);  // 禁用 IRQ
     
-    // 切换到 ARM 模式
+    // 切換到 ARM 模式
     core->cpu.regs.exec_mode = CPU_MODE_ARM;
     core->cpu.regs.cpsr &= ~(1 << 5);
     
-    // 跳转到 SWI 向量
+    // 跳轉到 SWI 向量
     core->cpu.regs.pc = 0x00000008;
     GBA_CPUFlushPipeline(core);
     
@@ -731,24 +731,24 @@ InstructionResult THUMB_SoftwareInterrupt(GBA_Core *core, uint16_t inst) {
 }
 
 /* ============================================================================
- * 主执行函数
+ * 主執行函式
  * ============================================================================ */
 
 InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction) {
-    // 简化的解码逻辑
-    // 注意：更具体的掩码（更多bits）应该先检查
+    // 簡化的解碼邏輯
+    // 注意：更具體的掩碼（更多bits）應該先檢查
     
-    // 加/减 (00011) - 更具体，先检查
+    // 加/減 (00011) - 更具體，先檢查
     if ((instruction & 0xF800) == 0x1800) {
         return THUMB_AddSubtract(core, instruction);
     }
     
-    // 移位操作 (000xx) - 更通用，后检查
+    // 移位操作 (000xx) - 更通用，後檢查
     if ((instruction & 0xE000) == 0x0000) {
         return THUMB_MoveShiftedRegister(core, instruction);
     }
     
-    // 立即数操作 (001xx)
+    // 立即數操作 (001xx)
     if ((instruction & 0xE000) == 0x2000) {
         return THUMB_MoveCmpAddSubImm(core, instruction);
     }
@@ -758,7 +758,7 @@ InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction) {
         return THUMB_ALUOperation(core, instruction);
     }
     
-    // 高寄存器操作/BX (010001)
+    // 高暫存器操作/BX (010001)
     if ((instruction & 0xFC00) == 0x4400) {
         return THUMB_HiRegisterOps(core, instruction);
     }
@@ -808,12 +808,12 @@ InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction) {
         return THUMB_PushPop(core, instruction);
     }
 
-    // 多重載入/儲存 (1100)
+    // 多過載入/儲存 (1100)
     if ((instruction & 0xF000) == 0xC000) {
         return THUMB_MultipleLoadStore(core, instruction);
     }
     
-    // 条件分支 (1101xxxx)
+    // 條件分支 (1101xxxx)
     if ((instruction & 0xF000) == 0xD000) {
         uint8_t cond = (instruction >> 8) & 0xF;
         if (cond != 0xF) {  // 不是 SWI
@@ -823,12 +823,12 @@ InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction) {
         }
     }
     
-    // 无条件分支 (11100)
+    // 無條件分支 (11100)
     if ((instruction & 0xF800) == 0xE000) {
         return THUMB_UnconditionalBranch(core, instruction);
     }
     
-    // 长分支 (1111x)
+    // 長分支 (1111x)
     if ((instruction & 0xF000) == 0xF000) {
         return THUMB_LongBranchLink(core, instruction);
     }

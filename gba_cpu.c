@@ -1,6 +1,6 @@
 /**
- * GBA CPU 执行引擎
- * 负责指令获取、流水线管理、中断处理
+ * GBA CPU 執行引擎
+ * 負責指令獲取、流水線管理、中斷處理
  */
 
 #include "gba_core.h"
@@ -9,38 +9,38 @@
 #include <string.h>
 
 /* ============================================================================
- * CPU 执行
+ * CPU 執行
  * ============================================================================ */
 
 InstructionResult GBA_CPUStep(GBA_Core *core) {
     GBA_CPU *cpu = &core->cpu;
     InstructionResult result = {0};
     
-    // 检查中断
+    // 檢查中斷
     if (GBA_InterruptPending(core) && !cpu->state.halted) {
         GBA_CPUCheckInterrupts(core);
     }
     
-    // 如果 CPU 暂停（HALT 状态），只消耗 1 周期
+    // 如果 CPU 暫停（HALT 狀態），只消耗 1 週期
     if (cpu->state.halted) {
         result.cycles = 1;
         return result;
     }
     
-    // 获取指令（从流水线）
+    // 獲取指令（從流水線）
     if (cpu->regs.exec_mode == CPU_MODE_ARM) {
         // ARM 模式（32 位指令）
         uint32_t instruction = cpu->regs.pipeline[0];
         
-        // 推进流水线
+        // 推進流水線
         cpu->regs.pipeline[0] = cpu->regs.pipeline[1];
         cpu->regs.pipeline[1] = cpu->regs.pipeline[2];
         cpu->regs.pipeline[2] = GBA_MemoryRead32(core, cpu->regs.exec_addr + 12);
         
-        // 执行指令
+        // 執行指令
         result = GBA_CPU_ExecuteARM(core, instruction);
         
-        // 更新 PC（如果没有分支）
+        // 更新 PC（如果沒有分支）
         if (!result.branch_taken) {
             cpu->regs.exec_addr += 4;
             cpu->regs.pc += 4;
@@ -50,12 +50,12 @@ InstructionResult GBA_CPUStep(GBA_Core *core) {
         // THUMB 模式（16 位指令）
         uint16_t instruction = cpu->regs.pipeline[0] & 0xFFFF;
         
-        // 推进流水线
+        // 推進流水線
         cpu->regs.pipeline[0] = cpu->regs.pipeline[1];
         cpu->regs.pipeline[1] = cpu->regs.pipeline[2];
         cpu->regs.pipeline[2] = GBA_MemoryRead16(core, cpu->regs.exec_addr + 6);
         
-        // 执行指令
+        // 執行指令
         result = GBA_CPU_ExecuteTHUMB(core, instruction);
         
         // 更新 PC
@@ -65,7 +65,7 @@ InstructionResult GBA_CPUStep(GBA_Core *core) {
         }
     }
     
-    // 累计周期
+    // 累計週期
     cpu->cycles.total += result.cycles;
     cpu->cycles.this_frame += result.cycles;
     cpu->cycles.instruction = result.cycles;
@@ -74,7 +74,7 @@ InstructionResult GBA_CPUStep(GBA_Core *core) {
 }
 
 /* ============================================================================
- * 流水线管理
+ * 流水線管理
  * ============================================================================ */
 
 void GBA_CPUFlushPipeline(GBA_Core *core) {
@@ -94,7 +94,7 @@ void GBA_CPUFlushPipeline(GBA_Core *core) {
 }
 
 /* ============================================================================
- * 模式切换
+ * 模式切換
  * ============================================================================ */
 
 void GBA_CPU_SwitchMode(GBA_Core *core, CPU_PrivilegeMode new_mode) {
@@ -103,7 +103,7 @@ void GBA_CPU_SwitchMode(GBA_Core *core, CPU_PrivilegeMode new_mode) {
     
     if (old_mode == new_mode) return;
     
-    // 保存当前模式的银行寄存器
+    // 儲存當前模式的銀行暫存器
     if (old_mode != CPU_STATE_FIQ) {
         cpu->regs.usr.r8_usr = cpu->regs.r[8];
         cpu->regs.usr.r9_usr = cpu->regs.r[9];
@@ -152,7 +152,7 @@ void GBA_CPU_SwitchMode(GBA_Core *core, CPU_PrivilegeMode new_mode) {
             break;
     }
     
-    // 恢复新模式的银行寄存器
+    // 恢復新模式的銀行暫存器
     if (new_mode != CPU_STATE_FIQ) {
         cpu->regs.r[8] = cpu->regs.usr.r8_usr;
         cpu->regs.r[9] = cpu->regs.usr.r9_usr;
@@ -208,14 +208,14 @@ void GBA_CPU_SwitchMode(GBA_Core *core, CPU_PrivilegeMode new_mode) {
 }
 
 /* ============================================================================
- * 中断处理
+ * 中斷處理
  * ============================================================================ */
 
 void GBA_InterruptRequest(GBA_Core *core, InterruptType type) {
     core->interrupt.IF |= type;
     core->interrupt.pending |= (type & core->interrupt.IE);
     
-    // 写入 I/O 寄存器
+    // 寫入 I/O 暫存器
     core->memory.io_registers[0x202] = core->interrupt.IF & 0xFF;
     core->memory.io_registers[0x203] = core->interrupt.IF >> 8;
 }
@@ -233,7 +233,7 @@ bool GBA_InterruptPending(const GBA_Core *core) {
         return false;
     }
     
-    // 检查 CPSR 中的 IRQ 禁用位
+    // 檢查 CPSR 中的 IRQ 禁用位
     if (core->cpu.regs.cpsr & (1 << 7)) {
         return false;
     }
@@ -244,7 +244,7 @@ bool GBA_InterruptPending(const GBA_Core *core) {
 InterruptType GBA_InterruptGetHighestPriority(const GBA_Core *core) {
     uint16_t pending = core->interrupt.IE & core->interrupt.IF;
     
-    // 按优先级顺序检查
+    // 按優先順序順序檢查
     if (pending & IRQ_VBLANK)   return IRQ_VBLANK;
     if (pending & IRQ_HBLANK)   return IRQ_HBLANK;
     if (pending & IRQ_VCOUNT)   return IRQ_VCOUNT;
@@ -298,7 +298,7 @@ void GBA_CPUCheckInterrupts(GBA_Core *core) {
         return;
     }
 
-    // 保存当前状态
+    // 儲存當前狀態
     uint32_t return_address;
 
     if (cpu->regs.exec_mode == CPU_MODE_ARM) {
@@ -309,25 +309,25 @@ void GBA_CPUCheckInterrupts(GBA_Core *core) {
 
     uint32_t old_cpsr = cpu->regs.cpsr;
 
-    // 切换到 IRQ 模式
+    // 切換到 IRQ 模式
     GBA_CPU_SwitchMode(core, CPU_STATE_IRQ);
 
-    // 保存返回地址和 CPSR
+    // 儲存返回地址和 CPSR
     cpu->regs.irq.r14 = return_address;
     cpu->regs.irq.spsr = old_cpsr;
 
-    // 禁用 IRQ，切换到 ARM 模式
+    // 禁用 IRQ，切換到 ARM 模式
     cpu->regs.cpsr |= (1 << 7);   // 禁用 IRQ
     cpu->regs.cpsr &= ~(1 << 5);  // 清除 THUMB 位
     cpu->regs.exec_mode = CPU_MODE_ARM;
 
-    // 跳转到中断向量 (0x00000018)
+    // 跳轉到中斷向量 (0x00000018)
     cpu->regs.pc = 0x00000018;
 
-    // 刷新流水线
+    // 重新整理流水線
     GBA_CPUFlushPipeline(core);
 
-    // 唤醒 CPU（如果处于 HALT 状态）
+    // 喚醒 CPU（如果處於 HALT 狀態）
     cpu->state.halted = false;
 }
 
@@ -346,36 +346,36 @@ void GBA_PPUUpdate(GBA_Core *core, uint32_t cycles) {
         core->ppu.scanline_cycles -= CYCLES_PER_SCANLINE;
         core->ppu.current_scanline++;
         
-        // 检查 HBlank 中断
+        // 檢查 HBlank 中斷
         if (core->memory.io_registers[0x004] & (1 << 4)) {  // DISPSTAT HBlank IRQ
             GBA_InterruptRequest(core, IRQ_HBLANK);
         }
         
         if (core->ppu.current_scanline == VISIBLE_SCANLINES) {
-            // 进入 VBlank
+            // 進入 VBlank
             core->ppu.in_vblank = true;
             
-            // 设置 DISPSTAT VBlank 标志
+            // 設定 DISPSTAT VBlank 標誌
             core->memory.io_registers[0x004] |= (1 << 0);
             
-            // VBlank 中断
+            // VBlank 中斷
             if (core->memory.io_registers[0x004] & (1 << 3)) {
                 GBA_InterruptRequest(core, IRQ_VBLANK);
             }
             
         } else if (core->ppu.current_scanline >= TOTAL_SCANLINES) {
-            // 新的一帧
+            // 新的一幀
             core->ppu.current_scanline = 0;
             core->ppu.in_vblank = false;
             
-            // 清除 DISPSTAT VBlank 标志
+            // 清除 DISPSTAT VBlank 標誌
             core->memory.io_registers[0x004] &= ~(1 << 0);
         }
         
-        // 更新 VCOUNT 寄存器
+        // 更新 VCOUNT 暫存器
         core->memory.io_registers[0x006] = core->ppu.current_scanline & 0xFF;
         
-        // 检查 VCOUNT 匹配中断
+        // 檢查 VCOUNT 匹配中斷
         uint8_t vcount_setting = core->memory.io_registers[0x005];
         if (core->ppu.current_scanline == vcount_setting) {
             if (core->memory.io_registers[0x004] & (1 << 5)) {
@@ -386,22 +386,22 @@ void GBA_PPUUpdate(GBA_Core *core, uint32_t cycles) {
 }
 
 /* ============================================================================
- * 定时器更新（简化版）
+ * 定時器更新（簡化版）
  * ============================================================================ */
 
 void GBA_TimerUpdate(GBA_Core *core, uint32_t cycles) {
-    // TODO: 实现完整的定时器逻辑
-    // 目前仅为占位符
+    // TODO: 實現完整的定時器邏輯
+    // 目前僅為佔位符
     (void)core;
     (void)cycles;
 }
 
 /* ============================================================================
- * DMA 更新（简化版）
+ * DMA 更新（簡化版）
  * ============================================================================ */
 
 void GBA_DMAUpdate(GBA_Core *core) {
-    // TODO: 实现完整的 DMA 逻辑
+    // TODO: 實現完整的 DMA 邏輯
     (void)core;
 }
 
@@ -410,15 +410,15 @@ bool GBA_DMAIsActive(const GBA_Core *core) {
 }
 
 /* ============================================================================
- * 辅助函数
+ * 輔助函式
  * ============================================================================ */
 
 void GBA_PPURenderFrame(GBA_Core *core) {
-    // TODO: 实现渲染逻辑
-    // 目前仅填充测试图案
+    // TODO: 實現渲染邏輯
+    // 目前僅填充測試圖案
     for (int y = 0; y < 160; y++) {
         for (int x = 0; x < 240; x++) {
-            // 简单的渐变测试图案
+            // 簡單的漸變測試圖案
             uint8_t r = (x * 255) / 240;
             uint8_t g = (y * 255) / 160;
             uint8_t b = 128;

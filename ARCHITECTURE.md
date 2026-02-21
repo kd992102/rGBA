@@ -2,7 +2,7 @@
 
 ## 📋 概述
 
-這份文檔說明 GBA 模擬器最重要的打底資料結構設計。這些結構是整個模擬器的基礎，負責統合所有子系統的執行。
+這份文件說明 GBA 模擬器最重要的打底資料結構設計。這些結構是整個模擬器的基礎，負責統合所有子系統的執行。
 
 ---
 
@@ -12,11 +12,11 @@
 Gba_System (完整系統)
 ├── Gba_Cpu (CPU 處理器)
 │   ├── uint32_t Reg[16]           /* R0-R15 暫存器 */
-│   ├── uint32_t CPSR              /* 狀態寄存器 */
+│   ├── uint32_t CPSR              /* 狀態暫存器 */
 │   ├── uint32_t fetchcache[3]     /* Pipeline 快取 */
 │   └── enum DECODE_MODE dMode     /* ARM/THUMB 模式 */
 │
-├── GbaMem (內存系統)
+├── GbaMem (記憶體系統)
 │   ├── uint32_t *BIOS            /* 0x0000_0000 - 0x0000_3FFF (16 KB) */
 │   ├── uint32_t *WRAM_board      /* 0x2000_0000 - 0x203F_FFFF (256 KB) */
 │   ├── uint32_t *WRAM_chip       /* 0x3000_0000 - 0x3000_7FFF (32 KB) */
@@ -30,13 +30,13 @@ Gba_System (完整系統)
 │   ├── uint16_t IF               /* 中斷請求旗標 (0x4000_0200) */
 │   ├── uint16_t IE               /* 中斷啟用旗標 (0x4000_0202) */
 │   ├── uint16_t IME              /* 中斷主控 (0x4000_0208) */
-│   ├── uint32_t pending_interrupts /* 待處理中斷隊列 */
-│   └── uint8_t vector_priority[14] /* 中斷優先級表 */
+│   ├── uint32_t pending_interrupts /* 待處理中斷佇列 */
+│   └── uint8_t vector_priority[14] /* 中斷優先順序表 */
 │
 ├── Gba_TimerSystem (定時器系統)
 │   └── struct timers[4]
 │       ├── uint16_t counter      /* 計數值 */
-│       ├── uint16_t reload       /* 重載值 */
+│       ├── uint16_t reload       /* 過載值 */
 │       ├── uint16_t control      /* 控制機制 */
 │       ├── uint8_t enabled       /* 是否啟用 */
 │       ├── uint8_t cascade_enable/* 級聯控制 */
@@ -45,7 +45,7 @@ Gba_System (完整系統)
 ├── Gba_PPUSystem (圖形系統)
 │   ├── uint16_t DISPCNT          /* 顯示控制 (0x4000_0000) */
 │   ├── uint16_t DISPSTAT         /* 顯示狀態 (0x4000_0004) */
-│   ├── uint16_t VCOUNT           /* VCount 寄存器 */
+│   ├── uint16_t VCOUNT           /* VCount 暫存器 */
 │   ├── uint16_t BG_CNT[4]        /* 背景控制 */
 │   ├── uint16_t BG_HOFS[4]       /* 水平偏移 */
 │   ├── uint16_t BG_VOFS[4]       /* 垂直偏移 */
@@ -54,11 +54,11 @@ Gba_System (完整系統)
 │   ├── uint16_t current_scanline /* 當前掃描線編號 */
 │   └── uint8_t in_vblank/in_hblank
 │
-└── DMA (直接內存存取)
+└── DMA (直接記憶體存取)
     └── DMA_CHANNEL DMAX[4]
         ├── uint32_t DMASAD      /* 來源地址 */
         ├── uint32_t DMADAD      /* 目標地址 */
-        └── uint32_t DMACNT      /* 控制寄存器 */
+        └── uint32_t DMACNT      /* 控制暫存器 */
 ```
 
 ---
@@ -66,18 +66,18 @@ Gba_System (完整系統)
 ## 🔄 執行流程圖
 
 ```
-主程序 main()
+主程式 main()
   │
   ├─→ GbaSystem_Init()
-  │   ├─ 分配內存
+  │   ├─ 分配記憶體
   │   ├─ 初始化所有子系統
-  │   └─ 設置初始 CPU 狀態
+  │   └─ 設定初始 CPU 狀態
   │
-  └─→ 主循環 (每幀)
+  └─→ 主迴圈 (每幀)
       │
       └─→ GbaSystem_RunFrame()
           │
-          ├─→ 循環直到達到 280896 cycles
+          ├─→ 迴圈直到達到 280896 cycles
           │   │
           │   ├─→ CpuExecute(chunk_cycles)
           │   │   └─ 執行 ARM/THUMB 指令
@@ -89,11 +89,11 @@ Gba_System (完整系統)
           │   │
           │   ├─→ GbaSystem_UpdateTimers(chunk)
           │   │   ├─ 遞增計數器
-          │   │   ├─ 檢查溢出
+          │   │   ├─ 檢查溢位
           │   │   └─ 觸發計時器中斷
           │   │
           │   └─→ GbaSystem_CheckInterrupts()
-          │       └─ 取得最高優先級中斷
+          │       └─ 取得最高優先順序中斷
           │
           └─ 幀完成，準備下一幀
 ```
@@ -129,28 +129,28 @@ VBLANK_LINES        = 68       lines   /* V-Blank 期間 */
 
 ## 🎯 中斷系統架構
 
-中斷優先級順序（由高到低）：
+中斷優先順序順序（由高到低）：
 
 ```
-優先級   中斷類型           位    地址              觸發條件
+優先順序   中斷型別           位    地址              觸發條件
 ═══════════════════════════════════════════════════════════════
 0       V-Blank           0     0x4000_0200      VCount = 160
-1       Timer 0           3     0x4000_0100      計數器溢出
+1       Timer 0           3     0x4000_0100      計數器溢位
 2       DMA 0             8     0x40000_B8A      DMA 完成
 3       H-Blank           1     0x4000_0004      掃描線 960+ cycles
 4       V-Count Match     2     0x4000_0006      VCount 比對
-5       Timer 1           4                     計數器溢出
+5       Timer 1           4                     計數器溢位
 6       DMA 1             9                     DMA 完成
-7       Timer 2           5                     計數器溢出
+7       Timer 2           5                     計數器溢位
 8       DMA 2             10                    DMA 完成
-9       Timer 3           6                     計數器溢出
+9       Timer 3           6                     計數器溢位
 10      DMA 3             11                    DMA 完成
-11      Serial            7                     通信完成
+11      Serial            7                     通訊完成
 12      Keypad            12                    按鍵事件
 13      Cartridge         13                    遊戲卡帶
 ```
 
-中斷控制寄存器：
+中斷控制暫存器：
 ```
 0x4000_0200 (IF - Interrupt Request)
   bit 0:   V-Blank (寫 1 清除)
@@ -166,7 +166,7 @@ VBLANK_LINES        = 68       lines   /* V-Blank 期間 */
 
 ---
 
-## 💾 內存映射
+## 💾 記憶體對映
 
 ```
 0x0000_0000  ┌─────────────────┐
@@ -182,15 +182,15 @@ VBLANK_LINES        = 68       lines   /* V-Blank 期間 */
 0x3000_7FFF  ├─────────────────┤
              │  (未使用)       │
 0x4000_0000  ├─────────────────┐
-             │   I/O 寄存器    │  ← LCD, Timer, DMA, IF, IE 等
+             │   I/O 暫存器    │  ← LCD, Timer, DMA, IF, IE 等
 0x4000_03FF  ├─────────────────┤
              │  (未使用)       │
 0x5000_0000  ├─────────────────┐
-             │ Palette RAM (1KB)│  ← 顏色調色板
+             │ Palette RAM (1KB)│  ← 顏色調色盤
 0x5000_03FF  ├─────────────────┤
              │  (未使用)       │
 0x6000_0000  ├─────────────────┐
-             │ VRAM (96 KB)    │  ← 背景/窗口/精靈數據
+             │ VRAM (96 KB)    │  ← 背景/視窗/精靈資料
 0x6001_7FFF  ├─────────────────┤
              │  (未使用)       │
 0x7000_0000  ├─────────────────┐
@@ -218,7 +218,7 @@ Gba_System gba;
 GbaSystem_Init(&gba);
 ```
 
-### 主執行循環
+### 主執行迴圈
 ```c
 while (game_running) {
     uint32_t cycles = GbaSystem_RunFrame(&gba);
@@ -239,7 +239,7 @@ Interrupt_Request(&gba, INT_VBLANK);
 // 啟用定時器中斷
 Interrupt_Enable(&gba, INT_TIMER0);
 
-// 設置全局中斷啟用
+// 設定全域性中斷啟用
 Interrupt_SetMasterEnable(&gba, 1);
 ```
 
@@ -250,7 +250,7 @@ Interrupt_SetMasterEnable(&gba, 1);
 - [x] `gba_system.h` - 核心資料結構定義
 - [x] `gba_system.c` - 系統驅動邏輯
 - [x] `gba_interrupt.h` - 中斷系統實現
-- [ ] 連接到 `main.c` 的主循環
+- [ ] 連線到 `main.c` 的主迴圈
 - [ ] 完成 CPU 指令執行
 - [ ] 完成 PPU 幀緩衝實際渲染
 - [ ] 完成定時器計數邏輯
@@ -262,6 +262,6 @@ Interrupt_SetMasterEnable(&gba, 1);
 
 1. **統一驅動**：`Gba_System` 包含所有子系統，便於統一管理和同步
 2. **精確時序**：週期計數與各子系統同步，確保準確性
-3. **優先級中斷**：中斷系統支持優先級排序，符合 GBA 硬件行為
-4. **模塊化**：各個子系統可獨立更新，便於維護和優化
-5. **狀態可查**：提供統計函數查詢系統狀態用於調試
+3. **優先順序中斷**：中斷系統支援優先順序排序，符合 GBA 硬體行為
+4. **模組化**：各個子系統可獨立更新，便於維護和最佳化
+5. **狀態可查**：提供統計函式查詢系統狀態用於除錯

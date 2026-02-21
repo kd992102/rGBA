@@ -1,8 +1,8 @@
-# GBA 時序參數參考文檔
+# GBA 時序引數參考文件
 
 ## 📋 來源驗證
 
-本文檔基於官方 **ARM7TDMI Data Sheet (ARM DDI 0029E, August 1995)** 得出。
+本文件基於官方 **ARM7TDMI Data Sheet (ARM DDI 0029E, August 1995)** 得出。
 
 ---
 
@@ -12,26 +12,26 @@
 
 **MCLK (Memory Clock Input) 規格：**
 
-| 參數 | 最小值 | 最大值 | 單位 | 說明 |
+| 引數 | 最小值 | 最大值 | 單位 | 說明 |
 |------|--------|--------|------|------|
 | Tmckl | 15.1 | - | ns | MCLK LOW 時間 |
 | Tmckh | 15.1 | - | ns | MCLK HIGH 時間 |
-| **最大運行頻率** | - | **33** | **MHz** | 完整週期 = 15.1+15.1=30.2ns → 33.1MHz |
+| **最大執行頻率** | - | **33** | **MHz** | 完整週期 = 15.1+15.1=30.2ns → 33.1MHz |
 
 > 📌 **來源**: ARM7TDMI Data Sheet, Figure 12-17 & Table 12-2, Section 12.2 Notes on AC Parameters
 > "All figures are provisional and assume a process which achieves 33MHz MCLK maximum operating frequency."
 
 ---
 
-## 🎮 GBA 特定的時序參數
+## 🎮 GBA 特定的時序引數
 
-### GBA 運行配置
+### GBA 執行配置
 
-| 參數 | 值 | 計算根據 |
+| 引數 | 值 | 計算根據 |
 |------|-----|---------|
 | **CPU 頻率** | 16,789,722 Hz (≈ 16.78 MHz) | 標準 GBA 規格 |
-| **運行頻率比** | 50.85% | 16.78 MHz / 33 MHz |
-| **顯示刷新率** | 59.7275 Hz (≈ 59.73 FPS) | GBA LCD 規格 |
+| **執行頻率比** | 50.85% | 16.78 MHz / 33 MHz |
+| **顯示重新整理率** | 59.7275 Hz (≈ 59.73 FPS) | GBA LCD 規格 |
 | **幀週期（微秒）** | 16,746.16 µs | 1 / 59.7275 Hz |
 
 ### 時序常數
@@ -40,10 +40,10 @@
 |---------|-----|---------|------|
 | **GBA_CYCLES_PER_FRAME** | 280,896 | 16,789,722 ÷ 59.7275 | ✅ 等於 16.78M / 59.73 |
 | **GBA_CYCLES_PER_SCANLINE** | 1,232 | 280,896 ÷ 228* | ✅ 160 visible + 68 blank = 228 lines |
-| **GBA_VDRAW_LINES** | 160 | GBA 顯示解析度 | ✅ 標準屏幕高度 240×160 |
+| **GBA_VDRAW_LINES** | 160 | GBA 顯示解析度 | ✅ 標準螢幕高度 240×160 |
 | **GBA_VBLANK_LINES** | 68 | 228 - 160 | ✅ 垂直消隱期 |
-| **GBA_H_PIXELS** | 240 | GBA 顯示寬度 | ✅ 標準屏幕寬度 |
-| **GBA_V_PIXELS** | 160 | GBA 顯示高度 | ✅ 標準屏幕高度 |
+| **GBA_H_PIXELS** | 240 | GBA 顯示寬度 | ✅ 標準螢幕寬度 |
+| **GBA_V_PIXELS** | 160 | GBA 顯示高度 | ✅ 標準螢幕高度 |
 
 *228 = 160 (可見行) + 68 (消隱行)
 
@@ -64,14 +64,14 @@
 
 ---
 
-## 🎯 中斷優先級順序
+## 🎯 中斷優先順序順序
 
-來源：GBA 技術規格 (ARM7TDMI 支援 14 種中斷類型)
+來源：GBA 技術規格 (ARM7TDMI 支援 14 種中斷型別)
 
-| 優先級 | 中斷類型 | IE位置 | 觸發條件 |
+| 優先順序 | 中斷型別 | IE位置 | 觸發條件 |
 |--------|---------|--------|---------|
 | 0 | V-Blank | 0x4000_0200 bit 0 | VCount = 160 |
-| 1 | Timer 0 | 0x4000_0100 bit 3 | 計數器溢出 |
+| 1 | Timer 0 | 0x4000_0100 bit 3 | 計數器溢位 |
 | 2 | DMA 0 | 0x40000_B8A bit 8 | DMA 完成 |
 | 3 | H-Blank | 0x4000_0004 bit 1 | 掃描線 960+ cycles |
 | 4 | V-Count Match | 0x4000_0006 bit 2 | VCount 比對 |
@@ -81,7 +81,7 @@
 
 ## ✅ 驗證檢查清單
 
-現有代碼的參數驗證狀態：
+現有程式碼的引數驗證狀態：
 
 - ✅ `GBA_CYCLES_PER_FRAME = 280,896` ← 官方規格確認無誤
 - ✅ `GBA_CYCLES_PER_SCANLINE = 1,232` ← 由 CYCLES_PER_FRAME 推導
@@ -100,28 +100,28 @@
    - Figure 12-17: MCLK timing
 
 2. **GBA 技術規格**
-   - CPU 運行頻率: 16.7897222 MHz
-   - 顯示刷新率: 59.7275 Hz
+   - CPU 執行頻率: 16.7897222 MHz
+   - 顯示重新整理率: 59.7275 Hz
    - 記憶體架構和中斷系統
 
 3. **業界參考**
-   - mGBA 模擬器源碼
-   - VBA-M 模擬器源碼
+   - mGBA 模擬器原始碼
+   - VBA-M 模擬器原始碼
    - GBA Programming Manual
 
 ---
 
-## 📝 代碼註釋更新建議
+## 📝 程式碼註釋更新建議
 
-建議在 `gba_system.h` 中添加以下註釋：
+建議在 `gba_system.h` 中新增以下註釋：
 
 ```c
 /**
  * GBA 時序常數定義
  * 來源：ARM7TDMI Data Sheet (August 1995, ARM DDI 0029E)
  *
- * GBA CPU 運行於 16.7897222 MHz（ARM7TDMI 最大 33MHz 的 ~50.85%）
- * 顯示刷新率為 59.7275 Hz
+ * GBA CPU 執行於 16.7897222 MHz（ARM7TDMI 最大 33MHz 的 ~50.85%）
+ * 顯示重新整理率為 59.7275 Hz
  * 
  * 計算：
  *   每幀週期 = 16,789,722 Hz ÷ 59.7275 fps = 280,896 cycles
@@ -140,4 +140,4 @@
 ---
 
 **最後更新**: 2026-02-18  
-**驗證狀態**: ✅ 所有參數已從官方文檔確認無誤
+**驗證狀態**: ✅ 所有引數已從官方文件確認無誤

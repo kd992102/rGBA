@@ -1,19 +1,19 @@
 /**
- * GBA 内存管理实现
- * 负责所有内存访问、等待状态计算
+ * GBA 記憶體管理實現
+ * 負責所有記憶體訪問、等待狀態計算
  */
 
 #include "gba_core.h"
 #include <string.h>
 #include <stdio.h>
 
-// 先行宣告 I/O 寄存器寫入輔助函數
+// 先行宣告 I/O 暫存器寫入輔助函式
 static void GBA_IORegisterWrite32(GBA_Core *core, uint32_t address, uint32_t value);
 static void GBA_IORegisterWrite16(GBA_Core *core, uint32_t address, uint16_t value);
 static void GBA_IORegisterWrite8(GBA_Core *core, uint32_t address, uint8_t value);
 
 /* ============================================================================
- * 内存访问周期计算
+ * 記憶體訪問週期計算
  * ============================================================================ */
 
 uint8_t GBA_MemoryGetAccessCycles(GBA_Core *core, uint32_t address, bool sequential) {
@@ -77,11 +77,11 @@ uint8_t* GBA_MemoryGetRegionPointer(GBA_Core *core, MemoryRegion region) {
 }
 
 /* ============================================================================
- * 32 位读取
+ * 32 位讀取
  * ============================================================================ */
 
 uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
-    address &= ~3;  // 对齐到 4 字节
+    address &= ~3;  // 對齊到 4 位元組
     
     MemoryRegion region = GBA_MemoryGetRegion(address);
     uint8_t *ptr = NULL;
@@ -89,13 +89,13 @@ uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
     
     switch (region) {
         case MEM_REGION_BIOS:
-            // BIOS 保护：只能在 PC < 0x4000 时读取
+            // BIOS 保護：只能在 PC < 0x4000 時讀取
             if (core->cpu.regs.pc < 0x4000) {
                 ptr = core->memory.bios;
                 offset = address & 0x3FFF;
             } else {
-                // 非法访问，返回最后读取的值（简化为 0）
-                return 0xE129F000;  // 未定义指令
+                // 非法訪問，返回最後讀取的值（簡化為 0）
+                return 0xE129F000;  // 未定義指令
             }
             break;
             
@@ -112,7 +112,7 @@ uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
         case MEM_REGION_IO:
             ptr = core->memory.io_registers;
             offset = address & 0x3FF;
-            // TODO: 特殊处理一些只读寄存器
+            // TODO: 特殊處理一些只讀暫存器
             break;
             
         case MEM_REGION_PALETTE:
@@ -123,7 +123,7 @@ uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
         case MEM_REGION_VRAM:
             ptr = core->memory.vram;
             offset = address & 0x1FFFF;
-            // VRAM 镜像处理
+            // VRAM 映象處理
             if (offset >= 0x18000) {
                 offset -= 0x8000;
             }
@@ -139,23 +139,23 @@ uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
         case MEM_REGION_ROM_WS2:
             if (core->memory.rom && core->memory.rom_size > 0) {
                 ptr = core->memory.rom;
-                // 所有 ROM 窗口映射到同一 ROM
+                // 所有 ROM 視窗對映到同一 ROM
                 offset = (address & 0x01FFFFFF) % core->memory.rom_size;
             } else {
-                return 0xFFFFFFFF;  // 未载入 ROM
+                return 0xFFFFFFFF;  // 未載入 ROM
             }
             break;
             
         case MEM_REGION_SRAM:
-            // SRAM 只支持 8 位访问
+            // SRAM 只支援 8 位訪問
             return core->memory.sram[address & 0xFFFF] * 0x01010101;
             
         default:
-            // 未映射区域
+            // 未對映區域
             return 0;
     }
     
-    // 读取 32 位值（小端序）
+    // 讀取 32 位值（小端序）
     if (ptr) {
         return ptr[offset] | 
                (ptr[offset + 1] << 8) | 
@@ -167,11 +167,11 @@ uint32_t GBA_MemoryRead32(GBA_Core *core, uint32_t address) {
 }
 
 /* ============================================================================
- * 16 位读取
+ * 16 位讀取
  * ============================================================================ */
 
 uint16_t GBA_MemoryRead16(GBA_Core *core, uint32_t address) {
-    address &= ~1;  // 对齐到 2 字节
+    address &= ~1;  // 對齊到 2 位元組
     
     MemoryRegion region = GBA_MemoryGetRegion(address);
     uint8_t *ptr = NULL;
@@ -246,7 +246,7 @@ uint16_t GBA_MemoryRead16(GBA_Core *core, uint32_t address) {
 }
 
 /* ============================================================================
- * 8 位读取
+ * 8 位讀取
  * ============================================================================ */
 
 uint8_t GBA_MemoryRead8(GBA_Core *core, uint32_t address) {
@@ -299,7 +299,7 @@ uint8_t GBA_MemoryRead8(GBA_Core *core, uint32_t address) {
 }
 
 /* ============================================================================
- * 32 位写入
+ * 32 位寫入
  * ============================================================================ */
 
 void GBA_MemoryWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
@@ -311,7 +311,7 @@ void GBA_MemoryWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
     
     switch (region) {
         case MEM_REGION_BIOS:
-            return;  // BIOS 只读
+            return;  // BIOS 只讀
             
         case MEM_REGION_EWRAM:
             ptr = core->memory.ewram;
@@ -324,7 +324,7 @@ void GBA_MemoryWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
             break;
             
         case MEM_REGION_IO:
-            // I/O 寄存器需要特殊处理
+            // I/O 暫存器需要特殊處理
             GBA_IORegisterWrite32(core, address, value);
             return;
             
@@ -347,10 +347,10 @@ void GBA_MemoryWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
         case MEM_REGION_ROM_WS0:
         case MEM_REGION_ROM_WS1:
         case MEM_REGION_ROM_WS2:
-            return;  // ROM 只读
+            return;  // ROM 只讀
             
         case MEM_REGION_SRAM:
-            // SRAM 只支持 8 位写入
+            // SRAM 只支援 8 位寫入
             core->memory.sram[address & 0xFFFF] = value & 0xFF;
             return;
             
@@ -367,7 +367,7 @@ void GBA_MemoryWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
 }
 
 /* ============================================================================
- * 16 位写入
+ * 16 位寫入
  * ============================================================================ */
 
 void GBA_MemoryWrite16(GBA_Core *core, uint32_t address, uint16_t value) {
@@ -426,7 +426,7 @@ void GBA_MemoryWrite16(GBA_Core *core, uint32_t address, uint16_t value) {
 }
 
 /* ============================================================================
- * 8 位写入
+ * 8 位寫入
  * ============================================================================ */
 
 void GBA_MemoryWrite8(GBA_Core *core, uint32_t address, uint8_t value) {
@@ -451,7 +451,7 @@ void GBA_MemoryWrite8(GBA_Core *core, uint32_t address, uint8_t value) {
         case MEM_REGION_PALETTE:
         case MEM_REGION_VRAM:
         case MEM_REGION_OAM:
-            // 这些区域不支持 8 位写入
+            // 這些區域不支援 8 位寫入
             break;
             
         case MEM_REGION_SRAM:
@@ -464,7 +464,7 @@ void GBA_MemoryWrite8(GBA_Core *core, uint32_t address, uint8_t value) {
 }
 
 /* ============================================================================
- * I/O 寄存器处理（简化版）
+ * I/O 暫存器處理（簡化版）
  * ============================================================================ */
 
 static void GBA_IORegisterWrite32(GBA_Core *core, uint32_t address, uint32_t value) {
@@ -475,22 +475,22 @@ static void GBA_IORegisterWrite32(GBA_Core *core, uint32_t address, uint32_t val
 static void GBA_IORegisterWrite16(GBA_Core *core, uint32_t address, uint16_t value) {
     uint32_t offset = address & 0x3FF;
     
-    // 直接写入（先）
+    // 直接寫入（先）
     core->memory.io_registers[offset] = value & 0xFF;
     core->memory.io_registers[offset + 1] = value >> 8;
     
-    // 特殊处理某些寄存器
+    // 特殊處理某些暫存器
     switch (offset) {
         case 0x200:  // IE
             core->interrupt.IE = value;
             break;
             
-        case 0x202:  // IF (写 1 清除)
+        case 0x202:  // IF (寫 1 清除)
             core->interrupt.IF &= ~value;
             break;
             
         case 0x204:  // WAITCNT
-            // 更新等待状态
+            // 更新等待狀態
             core->memory.wait_states.sram = (value & 0x3) + 1;
             core->memory.wait_states.ws0_n = ((value >> 2) & 0x3) + 1;
             core->memory.wait_states.ws0_s = ((value >> 4) & 0x1) ? 1 : 2;
@@ -510,7 +510,7 @@ static void GBA_IORegisterWrite8(GBA_Core *core, uint32_t address, uint8_t value
     uint32_t offset = address & 0x3FF;
     core->memory.io_registers[offset] = value;
     
-    // 某些寄存器需要 16 位处理
+    // 某些暫存器需要 16 位處理
     if (offset == 0x200 || offset == 0x201) {
         uint16_t ie = core->memory.io_registers[0x200] | 
                       (core->memory.io_registers[0x201] << 8);
