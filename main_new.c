@@ -16,7 +16,7 @@ static const char *ROM_FILE = "suite.gba";
 static const int ENABLE_SDL = 0;
 static const uint32_t MAX_FRAMES_NO_SDL = 10000;
 static const uint32_t REPORT_INTERVAL_FRAMES = 60;
-static const uint32_t DUMP_INSTRUCTIONS = 100;
+static const uint32_t DUMP_INSTRUCTIONS = 50;
 static const uint32_t SKIP_INSTRUCTIONS = 0;
 static const int USE_MGBA_BIOS_STATE = 1;
 
@@ -153,8 +153,10 @@ static void DumpInstructions(GBA_Core *gba, uint32_t skip, uint32_t count) {
         uint32_t pc = gba->cpu.regs.pc;
         uint32_t cpsr = gba->cpu.regs.cpsr;
 
-        printf("[inst %03u] EXEC: 0x%08X | OPC: 0x%08X | %s\n",
-            skip + i + 1, exec_addr, opcode, mode);
+        printf("[inst %03u] EXEC: 0x%08X | OPC: 0x%08X | %s | Cycles: %u (Total: %llu)\n",
+            skip + i + 1, exec_addr, opcode, mode, 
+            gba->cpu.cycles.instruction, 
+            (unsigned long long)gba->cpu.cycles.total);
         
         // 打印寄存器狀態（與 mGBA 格式相同）
         printf(" r0: %08X   r1: %08X   r2: %08X   r3: %08X\n",

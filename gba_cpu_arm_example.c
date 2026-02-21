@@ -817,8 +817,22 @@ InstructionResult ARM_BlockDataTransfer(GBA_Core *core, uint32_t inst) {
         }
     }
 
+    // GBATEK: LDM = nS + 1N + 1I, STM = (n-1)S + 2N
+    uint8_t cycles;
+    if (L) {
+        // LDM: nS + 1N + 1I = count + 2
+        cycles = count + 2;
+        if (load_pc) {
+            // Load to PC: 額外 +2S + 1N = +3
+            cycles += 3;
+        }
+    } else {
+        // STM: (n-1)S + 2N = count + 1
+        cycles = count + 1;
+    }
+
     return (InstructionResult) {
-        .cycles = (uint8_t)(1 + count),
+        .cycles = cycles,
         .branch_taken = load_pc,
         .pipeline_flush = load_pc,
         .mode_changed = false
@@ -924,9 +938,24 @@ InstructionResult ARM_SingleDataTransfer(GBA_Core *core, uint32_t inst) {
         GBA_CPUFlushPipeline(core);
     }
 
+    // GBATEK: LDR = 1S + 1N + 1I, STR = 2N
     uint8_t mem_cycles = GBA_MemoryGetAccessCycles(core, effective, false);
+    uint8_t total_cycles;
+    
+    if (L) {
+        // Load: 1S (opcode fetch) + 1N (memory read) + 1I (data transfer)
+        total_cycles = 1 + mem_cycles + 1;
+        if (load_pc) {
+            // Load to PC: 額外 +1S+1N (pipeline flush)
+            total_cycles += 2;
+        }
+    } else {
+        // Store: 2N (address calculation + memory write)
+        total_cycles = 1 + mem_cycles;
+    }
+    
     return (InstructionResult) {
-        .cycles = (uint8_t)(1 + mem_cycles),
+        .cycles = total_cycles,
         .branch_taken = load_pc,
         .pipeline_flush = load_pc,
         .mode_changed = false

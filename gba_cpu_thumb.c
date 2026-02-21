@@ -162,6 +162,7 @@ InstructionResult THUMB_MoveCmpAddSubImm(GBA_Core *core, uint16_t inst) {
  * ============================================================================ */
 
 InstructionResult THUMB_ConditionalBranch(GBA_Core *core, uint16_t inst) {
+    // THUMB 条件分支格式：Bits[15:12]=1101, Bits[11:8]=condition, Bits[7:0]=offset(8-bit signed)
     uint8_t cond = (inst >> 8) & 0xF;
     int8_t offset = inst & 0xFF;
     
@@ -173,11 +174,17 @@ InstructionResult THUMB_ConditionalBranch(GBA_Core *core, uint16_t inst) {
         };
     }
     
-    // 符号扩展并左移 1 位
+    // 符号扩展并左移 1 位（offset 是 8 位有符号）
     int32_t offset32 = (int32_t)offset << 1;
     
-    // 跳转
-    core->cpu.regs.pc = core->cpu.regs.pc + offset32;
+    // 计算跳转目标
+    // 分支指令跳转到: pc  + offset
+    // (pc 已经是 exec_addr + 4，所以这里已经考虑了pipeline)
+    uint32_t target_addr = core->cpu.regs.pc + offset32;
+    
+    // 更新 exec_addr 和 pc
+    core->cpu.regs.exec_addr = target_addr;
+    core->cpu.regs.pc = target_addr + 4;  // THUMB: pc = exec_addr + 4
     GBA_CPUFlushPipeline(core);
     
     return (InstructionResult) {
@@ -198,14 +205,18 @@ InstructionResult THUMB_UnconditionalBranch(GBA_Core *core, uint16_t inst) {
     // 左移 1 位
     int32_t offset32 = (int32_t)offset << 1;
     
-    // 跳转
-    core->cpu.regs.pc = core->cpu.regs.pc + offset32;
+    // 计算跳转目标
+    uint32_t target_addr = core->cpu.regs.pc + offset32;
+    
+    // 更新 exec_addr 和 pc
+    core->cpu.regs.exec_addr = target_addr;
+    core->cpu.regs.pc = target_addr + 4;  // THUMB
     GBA_CPUFlushPipeline(core);
     
     return (InstructionResult) {
         .cycles = 3,
         .branch_taken = true,
-        .pipeline_flush =true
+        .pipeline_flush = true
     };
 }
 
@@ -433,7 +444,9 @@ InstructionResult THUMB_HiRegisterOps(GBA_Core *core, uint16_t inst) {
 InstructionResult THUMB_PCRelativeLoad(GBA_Core *core, uint16_t inst) {
     uint8_t Rd = (inst >> 8) & 0x7;
     uint32_t imm = (inst & 0xFF) << 2;
-    uint32_t pc = (core->cpu.regs.pc + 4) & ~3U;
+    // 在 THUMB 模式，pc 已經是 exec_addr + 4，不需要再加 4
+    // ARM ARM spec: "address = (PC & ~2) + (offset << 2)"
+    uint32_t pc = core->cpu.regs.pc & ~3U;
     uint32_t addr = pc + imm;
 
     uint32_t value = GBA_MemoryRead32(core, addr & ~3U);
@@ -473,7 +486,8 @@ InstructionResult THUMB_LoadStoreRegOffset(GBA_Core *core, uint16_t inst) {
         }
     }
 
-    return (InstructionResult) { .cycles = 3, .branch_taken = false };
+    // GBATEK: LDR = 1S + 1N + 1I (3), STR = 2N (2)
+    return (InstructionResult) { .cycles = (uint8_t)(L ? 3 : 2), .branch_taken = false };
 }
 
 InstructionResult THUMB_LoadStoreSigned(GBA_Core *core, uint16_t inst) {
@@ -484,10 +498,12 @@ InstructionResult THUMB_LoadStoreSigned(GBA_Core *core, uint16_t inst) {
     uint8_t Rd = inst & 0x7;
 
     uint32_t addr = core->cpu.regs.r[Rn] + core->cpu.regs.r[Rm];
+    bool is_load = true;
 
     if (!H && !S) {  // STRH
         uint16_t value = (uint16_t)core->cpu.regs.r[Rd];
         GBA_MemoryWrite16(core, addr & ~1U, value);
+        is_load = false;
     } else if (!H && S) {  // LDRH
         uint16_t value = GBA_MemoryRead16(core, addr & ~1U);
         core->cpu.regs.r[Rd] = value;
@@ -499,7 +515,8 @@ InstructionResult THUMB_LoadStoreSigned(GBA_Core *core, uint16_t inst) {
         core->cpu.regs.r[Rd] = (int32_t)value;
     }
 
-    return (InstructionResult) { .cycles = 3, .branch_taken = false };
+    // GBATEK: LDR = 1S + 1N + 1I (3), STR = 2N (2)
+    return (InstructionResult) { .cycles = (uint8_t)(is_load ? 3 : 2), .branch_taken = false };
 }
 
 InstructionResult THUMB_LoadStoreImmOffset(GBA_Core *core, uint16_t inst) {
@@ -534,7 +551,8 @@ InstructionResult THUMB_LoadStoreImmOffset(GBA_Core *core, uint16_t inst) {
         }
     }
 
-    return (InstructionResult) { .cycles = 3, .branch_taken = false };
+    // GBATEK: LDR = 1S + 1N + 1I (3), STR = 2N (2)
+    return (InstructionResult) { .cycles = (uint8_t)(L ? 3 : 2), .branch_taken = false };
 }
 
 InstructionResult THUMB_LoadStoreHalfword(GBA_Core *core, uint16_t inst) {
@@ -552,7 +570,8 @@ InstructionResult THUMB_LoadStoreHalfword(GBA_Core *core, uint16_t inst) {
         GBA_MemoryWrite16(core, addr & ~1U, value);
     }
 
-    return (InstructionResult) { .cycles = 3, .branch_taken = false };
+    // GBATEK: LDR = 1S + 1N + 1I (3), STR = 2N (2)
+    return (InstructionResult) { .cycles = (uint8_t)(L ? 3 : 2), .branch_taken = false };
 }
 
 InstructionResult THUMB_SPRelativeLoadStore(GBA_Core *core, uint16_t inst) {
@@ -569,7 +588,8 @@ InstructionResult THUMB_SPRelativeLoadStore(GBA_Core *core, uint16_t inst) {
         GBA_MemoryWrite32(core, addr & ~3U, value);
     }
 
-    return (InstructionResult) { .cycles = 3, .branch_taken = false };
+    // GBATEK: LDR = 1S + 1N + 1I (3), STR = 2N (2)
+    return (InstructionResult) { .cycles = (uint8_t)(L ? 3 : 2), .branch_taken = false };
 }
 
 InstructionResult THUMB_LoadAddress(GBA_Core *core, uint16_t inst) {
@@ -604,6 +624,7 @@ InstructionResult THUMB_PushPop(GBA_Core *core, uint16_t inst) {
     uint32_t sp = core->cpu.regs.r[13];
 
     if (!L) {
+        // PUSH: (n-1)S + 2N = count + 1
         uint32_t addr = sp - (count * 4);
         for (uint8_t reg = 0; reg < 8; reg++) {
             if (reg_list & (1U << reg)) {
@@ -615,9 +636,10 @@ InstructionResult THUMB_PushPop(GBA_Core *core, uint16_t inst) {
             GBA_MemoryWrite32(core, addr, core->cpu.regs.r[14]);
         }
         core->cpu.regs.r[13] = sp - (count * 4);
-        return (InstructionResult) { .cycles = (uint8_t)(1 + count), .branch_taken = false };
+        return (InstructionResult) { .cycles = (uint8_t)(count + 1), .branch_taken = false };
     }
 
+    // POP: nS + 1N + 1I = count + 2
     uint32_t addr = sp;
     for (uint8_t reg = 0; reg < 8; reg++) {
         if (reg_list & (1U << reg)) {
@@ -625,15 +647,19 @@ InstructionResult THUMB_PushPop(GBA_Core *core, uint16_t inst) {
             addr += 4;
         }
     }
+    
+    uint8_t cycles = count + 2;
     if (R) {
         core->cpu.regs.pc = GBA_MemoryRead32(core, addr & ~3U) & ~1U;
         addr += 4;
         GBA_CPUFlushPipeline(core);
+        // POP {PC}: 額外 +2S + 1N = +3
+        cycles += 3;
     }
 
     core->cpu.regs.r[13] = sp + (count * 4);
     return (InstructionResult) {
-        .cycles = (uint8_t)(1 + count),
+        .cycles = cycles,
         .branch_taken = R,
         .pipeline_flush = R
     };
@@ -653,6 +679,7 @@ InstructionResult THUMB_MultipleLoadStore(GBA_Core *core, uint16_t inst) {
     }
 
     if (L) {
+        // LDMIA: nS + 1N + 1I = count + 2
         for (uint8_t reg = 0; reg < 8; reg++) {
             if (reg_list & (1U << reg)) {
                 core->cpu.regs.r[reg] = GBA_MemoryRead32(core, addr & ~3U);
@@ -660,6 +687,7 @@ InstructionResult THUMB_MultipleLoadStore(GBA_Core *core, uint16_t inst) {
             }
         }
     } else {
+        // STMIA: (n-1)S + 2N = count + 1
         for (uint8_t reg = 0; reg < 8; reg++) {
             if (reg_list & (1U << reg)) {
                 GBA_MemoryWrite32(core, addr & ~3U, core->cpu.regs.r[reg]);
@@ -669,7 +697,7 @@ InstructionResult THUMB_MultipleLoadStore(GBA_Core *core, uint16_t inst) {
     }
 
     core->cpu.regs.r[Rn] = base + (count * 4);
-    return (InstructionResult) { .cycles = (uint8_t)(1 + count), .branch_taken = false };
+    return (InstructionResult) { .cycles = (uint8_t)(L ? (count + 2) : (count + 1)), .branch_taken = false };
 }
 
 InstructionResult THUMB_SoftwareInterrupt(GBA_Core *core, uint16_t inst) {
@@ -708,15 +736,16 @@ InstructionResult THUMB_SoftwareInterrupt(GBA_Core *core, uint16_t inst) {
 
 InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction) {
     // 简化的解码逻辑
+    // 注意：更具体的掩码（更多bits）应该先检查
     
-    // 移位操作 (000xx)
-    if ((instruction & 0xE000) == 0x0000) {
-        return THUMB_MoveShiftedRegister(core, instruction);
-    }
-    
-    // 加/减 (00011)
+    // 加/减 (00011) - 更具体，先检查
     if ((instruction & 0xF800) == 0x1800) {
         return THUMB_AddSubtract(core, instruction);
+    }
+    
+    // 移位操作 (000xx) - 更通用，后检查
+    if ((instruction & 0xE000) == 0x0000) {
+        return THUMB_MoveShiftedRegister(core, instruction);
     }
     
     // 立即数操作 (001xx)
