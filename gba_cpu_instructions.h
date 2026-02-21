@@ -2,10 +2,10 @@
  * GBA CPU 指令處理 - 現代化設計
  * 
  * 設計特點：
- * 1. 查找表驅動 - 快速指令解碼
- * 2. 統一接口 - 所有指令函數返回 InstructionResult
- * 3. 上下文傳遞 - 無全局變數依賴
- * 4. 高性能 - 內聯關鍵路徑
+ * 1. 查詢表驅動 - 快速指令解碼
+ * 2. 統一介面 - 所有指令函式返回 InstructionResult
+ * 3. 上下文傳遞 - 無全域性變數依賴
+ * 4. 高效能 - 內聯關鍵路徑
  */
 
 #ifndef GBA_CPU_INSTRUCTIONS_H
@@ -14,26 +14,26 @@
 #include "gba_core.h"
 
 /* ============================================================================
- * 指令類型定義
+ * 指令型別定義
  * ============================================================================ */
 
 // ARM 指令格式
 typedef enum {
-    ARM_DATA_PROC,         // 數據處理
+    ARM_DATA_PROC,         // 資料處理
     ARM_PSR_TRANSFER,      // PSR 傳送
     ARM_MULTIPLY,          // 乘法
     ARM_MULTIPLY_LONG,     // 長乘法
-    ARM_SINGLE_DATA_SWAP,  // 單數據交換
+    ARM_SINGLE_DATA_SWAP,  // 單資料交換
     ARM_BRANCH_EXCHANGE,   // 分支交換
-    ARM_HALFWORD_DT,       // 半字數據傳送
-    ARM_SINGLE_DATA_TRANSFER,  // 單數據傳送
+    ARM_HALFWORD_DT,       // 半字資料傳送
+    ARM_SINGLE_DATA_TRANSFER,  // 單資料傳送
     ARM_UNDEFINED,         // 未定義
-    ARM_BLOCK_DATA_TRANSFER,   // 批量數據傳送
+    ARM_BLOCK_DATA_TRANSFER,   // 批次資料傳送
     ARM_BRANCH,            // 分支
-    ARM_COPROCESSOR_DT,    // 協處理器數據傳送 (GBA 不支持)
-    ARM_COPROCESSOR_DO,    // 協處理器操作 (GBA 不支持)
-    ARM_COPROCESSOR_RT,    // 協處理器寄存器傳送 (GBA 不支持)
-    ARM_SOFTWARE_INTERRUPT // 軟件中斷
+    ARM_COPROCESSOR_DT,    // 協處理器資料傳送 (GBA 不支援)
+    ARM_COPROCESSOR_DO,    // 協處理器操作 (GBA 不支援)
+    ARM_COPROCESSOR_RT,    // 協處理器暫存器傳送 (GBA 不支援)
+    ARM_SOFTWARE_INTERRUPT // 軟體中斷
 } ARM_InstructionType;
 
 // THUMB 指令格式
@@ -60,15 +60,15 @@ typedef enum {
 } THUMB_InstructionType;
 
 /* ============================================================================
- * 指令元數據 (用於調試和優化)
+ * 指令後設資料 (用於除錯和最佳化)
  * ============================================================================ */
 typedef struct {
     const char *mnemonic;      // 助記符 (如 "ADD")
-    uint8_t     min_cycles;    // 最小周期
-    uint8_t     max_cycles;    // 最大周期
+    uint8_t     min_cycles;    // 最小週期
+    uint8_t     max_cycles;    // 最大週期
     bool        can_branch;    // 是否可能分支
     bool        can_load;      // 是否載入記憶體
-    bool        can_store;     // 是否存儲記憶體
+    bool        can_store;     // 是否儲存記憶體
 } InstructionInfo;
 
 /* ============================================================================
@@ -94,7 +94,7 @@ typedef enum {
 } ARM_ConditionCode;
 
 /* ============================================================================
- * 數據處理操作碼
+ * 資料處理操作碼
  * ============================================================================ */
 typedef enum {
     DP_AND = 0x0,  // Logical AND
@@ -116,13 +116,13 @@ typedef enum {
 } DataProcessingOpcode;
 
 /* ============================================================================
- * 指令函數類型定義
+ * 指令函式型別定義
  * ============================================================================ */
 typedef InstructionResult (*ARM_InstructionHandler)(GBA_Core *core, uint32_t instruction);
 typedef InstructionResult (*THUMB_InstructionHandler)(GBA_Core *core, uint16_t instruction);
 
 /* ============================================================================
- * 主執行函數
+ * 主執行函式
  * ============================================================================ */
 
 /**
@@ -136,7 +136,7 @@ InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t instruction);
 InstructionResult GBA_CPU_ExecuteTHUMB(GBA_Core *core, uint16_t instruction);
 
 /* ============================================================================
- * ARM 指令處理函數
+ * ARM 指令處理函式
  * ============================================================================ */
 
 InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst);
@@ -153,7 +153,7 @@ InstructionResult ARM_Branch(GBA_Core *core, uint32_t inst);
 InstructionResult ARM_SoftwareInterrupt(GBA_Core *core, uint32_t inst);
 
 /* ============================================================================
- * THUMB 指令處理函數
+ * THUMB 指令處理函式
  * ============================================================================ */
 
 InstructionResult THUMB_MoveShiftedRegister(GBA_Core *core, uint16_t inst);
@@ -177,7 +177,7 @@ InstructionResult THUMB_UnconditionalBranch(GBA_Core *core, uint16_t inst);
 InstructionResult THUMB_LongBranchLink(GBA_Core *core, uint16_t inst);
 
 /* ============================================================================
- * 輔助函數
+ * 輔助函式
  * ============================================================================ */
 
 /**
@@ -187,27 +187,27 @@ InstructionResult THUMB_LongBranchLink(GBA_Core *core, uint16_t inst);
 bool GBA_CPU_CheckCondition(const GBA_Core *core, ARM_ConditionCode cond);
 
 /**
- * 解碼 ARM 指令類型
+ * 解碼 ARM 指令型別
  */
 ARM_InstructionType GBA_CPU_DecodeARM(uint32_t instruction);
 
 /**
- * 解碼 THUMB 指令類型
+ * 解碼 THUMB 指令型別
  */
 THUMB_InstructionType GBA_CPU_DecodeTHUMB(uint16_t instruction);
 
 /**
- * 獲取指令元數據 (調試用)
+ * 獲取指令後設資料 (除錯用)
  */
 const InstructionInfo* GBA_CPU_GetInstructionInfo(uint32_t instruction, bool is_thumb);
 
 /* ============================================================================
- * 內聯性能關鍵函數
+ * 內聯效能關鍵函式
  * ============================================================================ */
 
-// 條件檢查 (高度優化版本)
+// 條件檢查 (高度最佳化版本)
 static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
-    // 使用查找表加速條件檢查
+    // 使用查詢表加速條件檢查
     static const uint16_t condition_lut[16] = {
         0xF0F0,  // EQ
         0x0F0F,  // NE
@@ -231,12 +231,12 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
     return (condition_lut[cond] >> flags) & 1;
 }
 
-// 位域提取 (編譯器會優化為位操作)
+// 位域提取 (編譯器會最佳化為位操作)
 static inline uint32_t BITS(uint32_t value, uint8_t high, uint8_t low) {
     return (value >> low) & ((1U << (high - low + 1)) - 1);
 }
 
-// 符號擴展
+// 符號擴充套件
 static inline int32_t SIGN_EXTEND(uint32_t value, uint8_t bits) {
     uint32_t sign_bit = 1U << (bits - 1);
     if (value & sign_bit) {
@@ -245,7 +245,7 @@ static inline int32_t SIGN_EXTEND(uint32_t value, uint8_t bits) {
     return value;
 }
 
-// 循環右移
+// 迴圈右移
 static inline uint32_t ROR(uint32_t value, uint8_t amount) {
     amount &= 31;
     return (value >> amount) | (value << (32 - amount));
@@ -259,7 +259,7 @@ static inline int32_t ASR(int32_t value, uint8_t amount) {
     return value >> amount;
 }
 
-// 快速寄存器訪問
+// 快速暫存器訪問
 static inline uint32_t GBA_CPU_GetReg(const GBA_Core *core, uint8_t reg) {
     if (reg < 15) {
         return core->cpu.regs.r[reg];
@@ -272,7 +272,7 @@ static inline void GBA_CPU_SetReg(GBA_Core *core, uint8_t reg, uint32_t value) {
     if (reg < 15) {
         core->cpu.regs.r[reg] = value;
     } else {
-        // 設置執行地址，並同步更新 PC
+        // 設定執行地址，並同步更新 PC
         if (core->cpu.regs.exec_mode == CPU_MODE_THUMB) {
             core->cpu.regs.exec_addr = value & ~1;  // THUMB 對齊到 2
             core->cpu.regs.pc = core->cpu.regs.exec_addr + 4;
@@ -284,16 +284,16 @@ static inline void GBA_CPU_SetReg(GBA_Core *core, uint8_t reg, uint32_t value) {
 }
 
 /* ============================================================================
- * 查找表 (在 .c 文件中定義)
+ * 查詢表 (在 .c 檔案中定義)
  * ============================================================================ */
 
-// ARM 指令解碼查找表 (4096 項，覆蓋所有可能的指令模式)
+// ARM 指令解碼查詢表 (4096 項，覆蓋所有可能的指令模式)
 extern const ARM_InstructionHandler arm_instruction_lut[4096];
 
-// THUMB 指令解碼查找表 (256 項)
+// THUMB 指令解碼查詢表 (256 項)
 extern const THUMB_InstructionHandler thumb_instruction_lut[256];
 
-// 指令元數據表
+// 指令後設資料表
 extern const InstructionInfo arm_instruction_info[4096];
 extern const InstructionInfo thumb_instruction_info[256];
 

@@ -2,9 +2,9 @@
 
 ## 📋 設計目標
 
-1. **好維護** - 清晰的代碼結構，易於理解和修改
-2. **好擴充** - 模組化設計，易於添加新功能
-3. **效率高** - 優化關鍵路徑，最小化性能損耗
+1. **好維護** - 清晰的程式碼結構，易於理解和修改
+2. **好擴充** - 模組化設計，易於新增新功能
+3. **效率高** - 最佳化關鍵路徑，最小化效能損耗
 
 ---
 
@@ -13,16 +13,16 @@
 ### ❌ 舊設計的問題
 
 ```c
-// 問題 1: 全局變數依賴
+// 問題 1: 全域性變數依賴
 extern Gba_Cpu *cpu;
 extern GbaMem *Mem;
 
 void ArmDataProc(uint32_t inst) {
-    // 直接使用全局變數
+    // 直接使用全域性變數
     cpu->r[0] = Mem->RAM[0x100];
 }
 
-// 問題 2: 無返回值 - 無法追蹤周期
+// 問題 2: 無返回值 - 無法追蹤週期
 void ArmBranch(uint32_t inst);
 
 // 問題 3: ROM 結構混亂
@@ -32,16 +32,16 @@ typedef struct {
     uint8_t *Game_ROM3;
 } GbaMem;
 
-// 問題 4: 周期計數分散
+// 問題 4: 週期計數分散
 typedef struct {
-    uint32_t cycle;        // 這是什麼周期?
-    uint16_t frame_cycle;  // 會溢出 (最大 280,896)
+    uint32_t cycle;        // 這是什麼週期?
+    uint16_t frame_cycle;  // 會溢位 (最大 280,896)
     uint32_t cycle_sum;    // 和 cycle 有什麼區別?
 } Gba_Cpu;
 
 // 問題 5: 缺少統一上下文
-void UpdatePPU(void);    // 怎麼知道要處理哪個 GBA 實例?
-void UpdateTimer(void);  // 多個模擬器實例時會衝突
+void UpdatePPU(void);    // 怎麼知道要處理哪個 GBA 例項?
+void UpdateTimer(void);  // 多個模擬器例項時會衝突
 ```
 
 ### ✅ 新設計的優勢
@@ -57,9 +57,9 @@ typedef struct GBA_Core {
     GBA_DMA       dma;
 } GBA_Core;
 
-// ✅ 優勢 2: 無全局變數 - 所有函數接收上下文指針
+// ✅ 優勢 2: 無全域性變數 - 所有函式接收上下文指標
 InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst) {
-    // 通過參數訪問狀態
+    // 透過引數訪問狀態
     core->cpu.regs.r[0] = GBA_MemoryRead32(core, 0x02000100);
     
     return (InstructionResult) {
@@ -68,7 +68,7 @@ InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst) {
     };
 }
 
-// ✅ 優勢 3: 統一返回值 - 可追蹤周期和狀態
+// ✅ 優勢 3: 統一返回值 - 可追蹤週期和狀態
 typedef struct {
     uint8_t  cycles;
     bool     branch_taken;
@@ -78,20 +78,20 @@ typedef struct {
 
 // ✅ 優勢 4: 清晰的記憶體結構
 typedef struct GBA_Memory {
-    uint8_t *rom;         // 單一 ROM 指針
+    uint8_t *rom;         // 單一 ROM 指標
     size_t   rom_size;    // 明確大小
     
-    // WS0/WS1/WS2 通過位址範圍映射到同一 ROM
+    // WS0/WS1/WS2 透過位址範圍對映到同一 ROM
     // 0x08000000 - 0x09FFFFFF -> rom[0 .. rom_size-1]
-    // 0x0A000000 - 0x0BFFFFFF -> rom[0 .. rom_size-1] (鏡像)
-    // 0x0C000000 - 0x0DFFFFFF -> rom[0 .. rom_size-1] (鏡像)
+    // 0x0A000000 - 0x0BFFFFFF -> rom[0 .. rom_size-1] (映象)
+    // 0x0C000000 - 0x0DFFFFFF -> rom[0 .. rom_size-1] (映象)
 } GBA_Memory;
 
-// ✅ 優勢 5: 結構化周期追蹤
+// ✅ 優勢 5: 結構化週期追蹤
 typedef struct {
-    uint64_t total;        // 總執行周期 (從開機到現在)
-    uint32_t this_frame;   // 本幀已執行周期 (0 - 280,896)
-    uint32_t instruction;  // 當前指令消耗的周期
+    uint64_t total;        // 總執行週期 (從開機到現在)
+    uint32_t this_frame;   // 本幀已執行週期 (0 - 280,896)
+    uint32_t instruction;  // 當前指令消耗的週期
 } GBA_CPU_Cycles;
 ```
 
@@ -101,14 +101,14 @@ typedef struct {
 
 | 特性 | 舊設計 | 新設計 | 改善幅度 |
 |------|--------|--------|----------|
-| **可測試性** | ❌ 依賴全局變數，難以單元測試 | ✅ 純函數設計，易於測試 | 🔥🔥🔥🔥🔥 |
-| **多實例支持** | ❌ 全局變數衝突 | ✅ 支援多個模擬器實例 | 🔥🔥🔥🔥 |
-| **周期追蹤** | ❌ 無返回值，手動累加 | ✅ 自動返回周期數 | 🔥🔥🔥🔥 |
-| **調試友好** | ❌ 難以追蹤執行流程 | ✅ 完整的指令元數據 | 🔥🔥🔥🔥 |
-| **記憶體效率** | ⚠️ ROM 三個指針浪費空間 | ✅ 單一指針，鏡像映射 | 🔥🔥🔥 |
-| **代碼可讀性** | ⚠️ 全局依賴，難以理解 | ✅ 明確的參數傳遞 | 🔥🔥🔥🔥🔥 |
-| **編譯器優化** | ⚠️ 全局變數阻礙優化 | ✅ 局部變數，內聯友好 | 🔥🔥🔥 |
-| **擴展性** | ⚠️ 添加新功能需改全局狀態 | ✅ 模組化，易於擴展 | 🔥🔥🔥🔥 |
+| **可測試性** | ❌ 依賴全域性變數，難以單元測試 | ✅ 純函式設計，易於測試 | 🔥🔥🔥🔥🔥 |
+| **多例項支援** | ❌ 全域性變數衝突 | ✅ 支援多個模擬器例項 | 🔥🔥🔥🔥 |
+| **週期追蹤** | ❌ 無返回值，手動累加 | ✅ 自動返回週期數 | 🔥🔥🔥🔥 |
+| **除錯友好** | ❌ 難以追蹤執行流程 | ✅ 完整的指令後設資料 | 🔥🔥🔥🔥 |
+| **記憶體效率** | ⚠️ ROM 三個指標浪費空間 | ✅ 單一指標，映象對映 | 🔥🔥🔥 |
+| **程式碼可讀性** | ⚠️ 全域性依賴，難以理解 | ✅ 明確的引數傳遞 | 🔥🔥🔥🔥🔥 |
+| **編譯器最佳化** | ⚠️ 全域性變數阻礙最佳化 | ✅ 區域性變數，內聯友好 | 🔥🔥🔥 |
+| **擴充套件性** | ⚠️ 新增新功能需改全域性狀態 | ✅ 模組化，易於擴充套件 | 🔥🔥🔥🔥 |
 
 ---
 
@@ -118,8 +118,8 @@ typedef struct {
 
 ```c
 // main.c
-Gba_Cpu *cpu;      // 全局變數
-GbaMem *Mem;       // 全局變數
+Gba_Cpu *cpu;      // 全域性變數
+GbaMem *Mem;       // 全域性變數
 
 void init() {
     cpu = malloc(sizeof(Gba_Cpu));
@@ -131,21 +131,21 @@ void init() {
 void run() {
     while (running) {
         uint32_t inst = *(uint32_t*)(Mem->Game_ROM1 + cpu->pc);
-        ArmDataProc(inst);  // 怎麼知道消耗了多少周期?
+        ArmDataProc(inst);  // 怎麼知道消耗了多少週期?
         
         cpu->cycle += ???;  // 手動猜測
         
         if (cpu->cycle >= 280896) {
-            RenderFrame();  // 怎麼知道要渲染哪個實例的畫面?
+            RenderFrame();  // 怎麼知道要渲染哪個例項的畫面?
         }
     }
 }
 
 // 問題：
-// 1. 無法運行多個模擬器實例
-// 2. 無法追蹤周期
+// 1. 無法執行多個模擬器例項
+// 2. 無法追蹤週期
 // 3. 無法單元測試
-// 4. 代碼耦合嚴重
+// 4. 程式碼耦合嚴重
 ```
 
 ### ✅ 新設計的使用方式
@@ -153,7 +153,7 @@ void run() {
 ```c
 // main.c - 簡潔明瞭
 int main() {
-    // 1. 創建模擬器實例
+    // 1. 建立模擬器例項
     GBA_Core *gba = GBA_CoreCreate();
     
     // 2. 載入 BIOS 和 ROM
@@ -165,7 +165,7 @@ int main() {
     free(bios);
     free(rom);
     
-    // 3. 主循環 - 超簡單!
+    // 3. 主迴圈 - 超簡單!
     while (running) {
         // 執行一幀 (自動處理所有周期)
         GBA_CoreRunFrame(gba);
@@ -181,10 +181,10 @@ int main() {
 }
 
 // ✅ 優勢：
-// 1. 可運行多個實例 (多人遊戲、同時錄製等)
-// 2. 自動處理周期計數
-// 3. 易於調試和測試
-// 4. 代碼清晰易懂
+// 1. 可執行多個例項 (多人遊戲、同時錄製等)
+// 2. 自動處理週期計數
+// 3. 易於除錯和測試
+// 4. 程式碼清晰易懂
 ```
 
 ### ✅ 單元測試範例 (新設計才可能做到)
@@ -192,10 +192,10 @@ int main() {
 ```c
 // test_cpu.c
 void test_arm_add_instruction() {
-    // 創建測試用實例
+    // 建立測試用例項
     GBA_Core *core = GBA_CoreCreate();
     
-    // 設置初始狀態
+    // 設定初始狀態
     core->cpu.regs.r[0] = 10;
     core->cpu.regs.r[1] = 20;
     
@@ -205,7 +205,7 @@ void test_arm_add_instruction() {
     
     // 驗證結果
     assert(core->cpu.regs.r[2] == 30);  // 10 + 20 = 30
-    assert(result.cycles == 1);          // 1S 周期
+    assert(result.cycles == 1);          // 1S 週期
     assert(result.branch_taken == false);
     
     // 驗證標誌位
@@ -213,20 +213,20 @@ void test_arm_add_instruction() {
     assert(!GBA_CPU_GetFlag_Z(&core->cpu));  // 非零
     
     GBA_CoreDestroy(core);
-    printf("✅ ADD 指令測試通過\n");
+    printf("✅ ADD 指令測試透過\n");
 }
 
 // 舊設計無法做到這樣的單元測試，因為:
-// 1. 依賴全局變數
+// 1. 依賴全域性變數
 // 2. 無法隔離測試環境
 // 3. 副作用難以控制
 ```
 
 ---
 
-## 🚀 性能優化設計
+## 🚀 效能最佳化設計
 
-### 1. 查找表驅動的指令解碼
+### 1. 查詢表驅動的指令解碼
 
 ```c
 // ❌ 舊設計：大量 if-else (慢)
@@ -240,7 +240,7 @@ void ExecuteARM(uint32_t inst) {
     }
 }
 
-// ✅ 新設計：查找表 (快)
+// ✅ 新設計：查詢表 (快)
 InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t inst) {
     // 使用指令的高 12 位作為索引
     uint16_t lut_index = (inst >> 20) & 0xFFF;
@@ -249,25 +249,25 @@ InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t inst) {
     return arm_instruction_lut[lut_index](core, inst);
 }
 
-// 性能提升：10-30% (減少分支預測失敗)
+// 效能提升：10-30% (減少分支預測失敗)
 ```
 
 ### 2. 內聯關鍵路徑
 
 ```c
-// ✅ 高頻調用的函數使用 inline
+// ✅ 高頻呼叫的函式使用 inline
 static inline uint32_t GBA_CPU_GetReg(const GBA_Core *core, uint8_t reg) {
     return reg < 15 ? core->cpu.regs.r[reg] : core->cpu.regs.pc;
 }
 
-// 編譯器會將這個函數直接展開，避免函數調用開銷
-// 性能提升：5-15%
+// 編譯器會將這個函式直接展開，避免函式呼叫開銷
+// 效能提升：5-15%
 ```
 
-### 3. 條件檢查優化
+### 3. 條件檢查最佳化
 
 ```c
-// ✅ 使用位操作和查找表加速條件檢查
+// ✅ 使用位操作和查詢表加速條件檢查
 static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
     static const uint16_t lut[16] = {
         0xF0F0, 0x0F0F, 0xCCCC, 0x3333,
@@ -280,7 +280,7 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
     return (lut[cond] >> flags) & 1;
 }
 
-// 性能提升：30-50% vs. 多個 if-else
+// 效能提升：30-50% vs. 多個 if-else
 ```
 
 ---
@@ -289,49 +289,49 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
 
 ### 方案 A: 激進重構 (推薦)
 **優勢：** 一次性解決所有問題  
-**劣勢：** 需要重寫大部分代碼  
+**劣勢：** 需要重寫大部分程式碼  
 **時間：** 2-3 天  
 **步驟：**
-1. 創建 `gba_core.h` 新架構
+1. 建立 `gba_core.h` 新架構
 2. 逐個實現模組 (CPU → Memory → PPU)
-3. 移植舊代碼到新架構
+3. 移植舊程式碼到新架構
 4. 測試驗證
 
 ### 方案 B: 漸進重構
-**優勢：** 保持代碼可運行  
-**劣勢：** 過渡期代碼混亂  
+**優勢：** 保持程式碼可執行  
+**劣勢：** 過渡期程式碼混亂  
 **時間：** 5-7 天  
 **步驟：**
 1. 先重構 CPU 部分
-2. 保留全局變數作為過渡
+2. 保留全域性變數作為過渡
 3. 逐步遷移其他模組
-4. 最後移除全局變數
+4. 最後移除全域性變數
 
 ### 方案 C: 混合方案
 **優勢：** 兼顧速度和穩定性  
-**劣勢：** 需要維護兩套代碼  
+**劣勢：** 需要維護兩套程式碼  
 **時間：** 3-4 天  
 **步驟：**
-1. 保留舊代碼
+1. 保留舊程式碼
 2. 並行開發新架構
 3. 新功能用新架構
-4. 舊代碼逐步廢棄
+4. 舊程式碼逐步廢棄
 
 ---
 
 ## 📈 預期效果
 
-### 性能提升
-- **指令執行速度** ↑ 15-25% (查找表 + 內聯)
-- **記憶體訪問** ↑ 10-20% (緩存友好)
+### 效能提升
+- **指令執行速度** ↑ 15-25% (查詢表 + 內聯)
+- **記憶體訪問** ↑ 10-20% (快取友好)
 - **整體幀率** ↑ 10-15%
 
 ### 開發效率
 - **單元測試覆蓋率** 0% → 80%+
-- **調試時間** ↓ 50-70%
+- **除錯時間** ↓ 50-70%
 - **新功能開發** ↓ 30-50% 時間
 
-### 代碼品質
+### 程式碼品質
 - **Bug 密度** ↓ 60-80%
 - **可維護性** ↑ 300%+
 - **可讀性** ↑ 200%+
@@ -347,7 +347,7 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
 
 ### 短期目標 (本週)
 - 完成 CPU 核心重構
-- 實現指令查找表
+- 實現指令查詢表
 - 建立單元測試框架
 
 ### 中期目標 (2 週內)
@@ -358,7 +358,7 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
 ### 長期目標 (1 個月內)
 - 完成 PPU 渲染
 - 修復 ROM 崩潰問題
-- 成功運行 Pokemon 等商業遊戲
+- 成功執行 Pokemon 等商業遊戲
 
 ---
 
@@ -367,12 +367,12 @@ static inline bool GBA_CPU_CheckConditionFast(uint32_t cpsr, uint8_t cond) {
 請告訴我你想:
 
 **A) 激進重構** - 我幫你用新架構重寫整個專案  
-**B) 漸進重構** - 逐步遷移，保持代碼可運行  
+**B) 漸進重構** - 逐步遷移，保持程式碼可執行  
 **C) 先看範例** - 我先實現一個完整的模組讓你看效果  
 **D) 其他想法** - 告訴我你的想法
 
 我個人建議 **A) 激進重構**，因為:
-1. 你的代碼量還不算大 (< 3000 行)
+1. 你的程式碼量還不算大 (< 3000 行)
 2. 你已經有開發經驗，理解原理
 3. 新架構會大幅提升開發速度
 4. 可以借機修復之前的 ROM 崩潰問題

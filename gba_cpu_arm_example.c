@@ -1,6 +1,6 @@
 /**
- * ARM 指令集完整实现
- * 支持所有 ARM7TDMI 指令类型
+ * ARM 指令集完整實現
+ * 支援所有 ARM7TDMI 指令型別
  */
 
 #include "gba_cpu_instructions.h"
@@ -210,7 +210,7 @@ InstructionResult ARM_MSR(GBA_Core *core, uint32_t inst) {
     if (field_mask & 0x1) mask |= 0x000000FF;  // control (mode, I, F, T)
 
     // 在 User 模式下，只能修改條件標誌位
-    // System 模式是特權模式，可以修改所有字段
+    // System 模式是特權模式，可以修改所有欄位
     if (core->cpu.regs.priv_mode == CPU_STATE_USER) {
         mask &= 0xFF000000;  // 只保留 flags 部分
     }
@@ -247,7 +247,7 @@ InstructionResult ARM_MSR(GBA_Core *core, uint32_t inst) {
             CPU_PrivilegeMode old_mode = core->cpu.regs.priv_mode;
             CPU_PrivilegeMode new_mode = (CPU_PrivilegeMode)(core->cpu.regs.cpsr & 0x1F);
             if (new_mode != old_mode) {
-                // 保存當前模式的 r13, r14 到 banked registers
+                // 儲存當前模式的 r13, r14 到 banked registers
                 switch (old_mode) {
                     case CPU_STATE_FIQ:
                         core->cpu.regs.fiq.r13_fiq = core->cpu.regs.r[13];
@@ -276,7 +276,7 @@ InstructionResult ARM_MSR(GBA_Core *core, uint32_t inst) {
                         break;
                 }
                 
-                // 加載新模式的 r13, r14 從 banked registers
+                // 載入新模式的 r13, r14 從 banked registers
                 switch (new_mode) {
                     case CPU_STATE_FIQ:
                         core->cpu.regs.r[13] = core->cpu.regs.fiq.r13_fiq;
@@ -314,7 +314,7 @@ InstructionResult ARM_MSR(GBA_Core *core, uint32_t inst) {
 }
 
 /* ============================================================================
- * 數據處理指令 - 完整實現
+ * 資料處理指令 - 完整實現
  * ============================================================================ */
 
 InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst) {
@@ -333,12 +333,12 @@ InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst) {
     uint8_t Rn = (inst >> 16) & 0xF;
     bool S = (inst >> 20) & 1;
     
-    // 獲取操作數
+    // 獲取運算元
     uint32_t op1 = GBA_CPU_GetReg(core, Rn);
     uint32_t op2;
     bool carry = GBA_CPU_GetFlag_C(&core->cpu);
     
-    // 解碼 Op2 (簡化版，僅支持立即數)
+    // 解碼 Op2 (簡化版，僅支援立即數)
     if (inst & (1 << 25)) {
         uint8_t imm = inst & 0xFF;
         uint8_t rotate = ((inst >> 8) & 0xF) * 2;
@@ -395,7 +395,7 @@ InstructionResult ARM_DataProcessing(GBA_Core *core, uint32_t inst) {
         case DP_TST:  // Test (AND, no write)
             result = op1 & op2;
             write_result = false;
-            S = true;  // 強制設置標誌位
+            S = true;  // 強制設定標誌位
             break;
             
         case DP_TEQ:  // Test Equal (XOR, no write)
@@ -535,11 +535,11 @@ InstructionResult ARM_Branch(GBA_Core *core, uint32_t inst) {
     // 提取 Link 位
     bool link = (inst >> 24) & 1;
     
-    // 提取偏移 (24 位，符號擴展到 32 位)
+    // 提取偏移 (24 位，符號擴充套件到 32 位)
     int32_t offset = SIGN_EXTEND(inst & 0xFFFFFF, 24);
     offset <<= 2;  // 左移 2 位 (字對齊)
     
-    // 保存返回地址 (如果是 BL)
+    // 儲存返回地址 (如果是 BL)
     if (link) {
         core->cpu.regs.r[14] = core->cpu.regs.pc - 4;  // LR = PC - 4 (return address)
     }
@@ -548,7 +548,7 @@ InstructionResult ARM_Branch(GBA_Core *core, uint32_t inst) {
     uint32_t target = (core->cpu.regs.pc + offset) & ~3;
     GBA_CPU_SetReg(core, 15, target);
     
-    // 刷新流水線
+    // 重新整理流水線
     GBA_CPUFlushPipeline(core);
     
     return (InstructionResult) {
@@ -573,7 +573,7 @@ InstructionResult ARM_BranchExchange(GBA_Core *core, uint32_t inst) {
         };
     }
     
-    // 獲取目標寄存器
+    // 獲取目標暫存器
     uint8_t Rm = inst & 0xF;
     uint32_t target = GBA_CPU_GetReg(core, Rm);
     
@@ -601,14 +601,14 @@ InstructionResult ARM_BranchExchange(GBA_Core *core, uint32_t inst) {
 }
 
 /* ============================================================================
- * 軟件中斷 (SWI)
+ * 軟體中斷 (SWI)
  * ============================================================================ */
 
 InstructionResult ARM_SoftwareInterrupt(GBA_Core *core, uint32_t inst) {
     // SWI 不檢查條件碼
     uint8_t swi_num = (inst >> 16) & 0xFF;
     
-    // 保存返回地址
+    // 儲存返回地址
     core->cpu.regs.svc.r14 = core->cpu.regs.pc - 4;
     core->cpu.regs.svc.spsr = core->cpu.regs.cpsr;
     
@@ -730,7 +730,7 @@ InstructionResult ARM_MultiplyLong(GBA_Core *core, uint32_t inst) {
 }
 
 /* ============================================================================
- * 批量數據傳送 (LDM/STM)
+ * 批次資料傳送 (LDM/STM)
  * ============================================================================ */
 
 InstructionResult ARM_BlockDataTransfer(GBA_Core *core, uint32_t inst) {
@@ -840,7 +840,7 @@ InstructionResult ARM_BlockDataTransfer(GBA_Core *core, uint32_t inst) {
 }
 
 /* ============================================================================
- * 單數據傳送 (LDR/STR)
+ * 單資料傳送 (LDR/STR)
  * ============================================================================ */
 
 InstructionResult ARM_SingleDataTransfer(GBA_Core *core, uint32_t inst) {
@@ -853,7 +853,7 @@ InstructionResult ARM_SingleDataTransfer(GBA_Core *core, uint32_t inst) {
         };
     }
 
-    bool I = (inst >> 25) & 1;  // 立即數/寄存器偏移
+    bool I = (inst >> 25) & 1;  // 立即數/暫存器偏移
     bool P = (inst >> 24) & 1;  // Pre/Post
     bool U = (inst >> 23) & 1;  // 加/減偏移
     bool B = (inst >> 22) & 1;  // Byte/Word
@@ -963,11 +963,11 @@ InstructionResult ARM_SingleDataTransfer(GBA_Core *core, uint32_t inst) {
 }
 
 /* ============================================================================
- * 主執行函數
+ * 主執行函式
  * ============================================================================ */
 
 InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t instruction) {
-    // 簡化的解碼邏輯 (完整版應使用查找表)
+    // 簡化的解碼邏輯 (完整版應使用查詢表)
     
     // 乘法 (MUL/MLA)
     if ((instruction & 0x0FC000F0) == 0x00000090) {
@@ -1002,7 +1002,7 @@ InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t instruction) {
         return ARM_MSR(core, instruction);
     }
 
-    // 數據處理 (00I)
+    // 資料處理 (00I)
     if ((instruction & 0x0C000000) == 0x00000000) {
         return ARM_DataProcessing(core, instruction);
     }
@@ -1012,18 +1012,18 @@ InstructionResult GBA_CPU_ExecuteARM(GBA_Core *core, uint32_t instruction) {
         return ARM_Branch(core, instruction);
     }
 
-    // 單數據傳送 (LDR/STR)
+    // 單資料傳送 (LDR/STR)
     if ((instruction & 0x0C000000) == 0x04000000) {
         return ARM_SingleDataTransfer(core, instruction);
     }
 
-    // 批量數據傳送 (LDM/STM)
+    // 批次資料傳送 (LDM/STM)
     if ((instruction & 0x0E000000) == 0x08000000) {
         return ARM_BlockDataTransfer(core, instruction);
     }
     
     
-    // 軟件中斷 (1111)
+    // 軟體中斷 (1111)
     if ((instruction & 0x0F000000) == 0x0F000000) {
         return ARM_SoftwareInterrupt(core, instruction);
     }

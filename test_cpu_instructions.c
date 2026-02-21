@@ -53,29 +53,29 @@ static int tests_failed = 0;
 
 #define TEST_PASS() \
     do { \
-        printf("  ✅ 通過\n"); \
+        printf("  ✅ 透過\n"); \
         tests_passed++; \
         return true; \
     } while(0)
 
 /* ============================================================================
- * 測試輔助函數
+ * 測試輔助函式
  * ============================================================================ */
 
 /**
- * 創建測試用的 GBA Core
+ * 建立測試用的 GBA Core
  */
 GBA_Core* CreateTestCore() {
     GBA_Core *core = GBA_CoreCreate();
     if (!core) {
-        fprintf(stderr, "無法創建測試用核心\n");
+        fprintf(stderr, "無法建立測試用核心\n");
         return NULL;
     }
     
     // 初始化一些基本記憶體（避免訪問空指標）
     memset(core->memory.iwram, 0, 32 * 1024);
     
-    // 設置一個簡單的測試環境
+    // 設定一個簡單的測試環境
     core->cpu.regs.pc = 0x03000000;  // IWRAM
     core->cpu.regs.r[13] = 0x03007F00;  // SP
     
@@ -83,7 +83,7 @@ GBA_Core* CreateTestCore() {
 }
 
 /**
- * 重置 CPU 寄存器到初始狀態
+ * 重置 CPU 暫存器到初始狀態
  */
 void ResetCPURegisters(GBA_Core *core) {
     memset(&core->cpu, 0, sizeof(GBA_CPU));
@@ -94,7 +94,7 @@ void ResetCPURegisters(GBA_Core *core) {
 }
 
 /**
- * 設置 CPSR 標誌位（用於測試條件指令）
+ * 設定 CPSR 標誌位（用於測試條件指令）
  */
 void SetFlags(GBA_Core *core, bool N, bool Z, bool C, bool V) {
     uint32_t cpsr = core->cpu.regs.cpsr & 0x0FFFFFFF;
@@ -106,14 +106,14 @@ void SetFlags(GBA_Core *core, bool N, bool Z, bool C, bool V) {
 }
 
 /* ============================================================================
- * ARM 數據處理指令測試
+ * ARM 資料處理指令測試
  * ============================================================================ */
 
 bool Test_ARM_ADD() {
     TEST_START("ARM ADD");
     GBA_Core *core = CreateTestCore();
     
-    // 設置初始值
+    // 設定初始值
     core->cpu.regs.r[0] = 10;
     core->cpu.regs.r[1] = 20;
     
@@ -177,25 +177,25 @@ bool Test_ARM_MOV_Immediate() {
 }
 
 bool Test_ARM_CMP() {
-    TEST_START("ARM CMP 設置標誌位");
+    TEST_START("ARM CMP 設定標誌位");
     GBA_Core *core = CreateTestCore();
     
     core->cpu.regs.r[0] = 10;
     core->cpu.regs.r[1] = 10;
     
-    // CMP R0, R1 (E1500001) - 應設置 Z 標誌
+    // CMP R0, R1 (E1500001) - 應設定 Z 標誌
     uint32_t inst = 0xE1500001;
     ARM_DataProcessing(core, inst);
     
-    ASSERT_TRUE(GBA_CPU_GetFlag_Z(&core->cpu), "Z 標誌應設置（相等）");
+    ASSERT_TRUE(GBA_CPU_GetFlag_Z(&core->cpu), "Z 標誌應設定（相等）");
     ASSERT_FALSE(GBA_CPU_GetFlag_N(&core->cpu), "N 標誌應清除（非負）");
     
-    // CMP R1, R0 (E1510000) - R1 < R0，應設置 N 標誌
+    // CMP R1, R0 (E1510000) - R1 < R0，應設定 N 標誌
     core->cpu.regs.r[1] = 5;
     inst = 0xE1510000;
     ARM_DataProcessing(core, inst);
     
-    ASSERT_TRUE(GBA_CPU_GetFlag_N(&core->cpu), "N 標誌應設置（負數）");
+    ASSERT_TRUE(GBA_CPU_GetFlag_N(&core->cpu), "N 標誌應設定（負數）");
     
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -278,7 +278,7 @@ bool Test_ARM_LDR_STR_MemoryBoundaries() {
     ASSERT_EQ(core->memory.bios[2], 0x33, "BIOS 應忽略寫入");
     ASSERT_EQ(core->memory.bios[3], 0x44, "BIOS 應忽略寫入");
 
-    // IO 寄存器寫入
+    // IO 暫存器寫入
     core->cpu.regs.pc = 0x03000000;
     core->cpu.regs.r[1] = 0x04000200; // IE
     core->cpu.regs.r[0] = 0x00000001;
@@ -312,7 +312,7 @@ bool Test_ARM_LDR_STR_MemoryBoundaries() {
 }
 
 bool Test_ARM_IORegister_SideEffects() {
-    TEST_START("ARM IO 特殊寄存器副作用 (IF/IME/WAITCNT)");
+    TEST_START("ARM IO 特殊暫存器副作用 (IF/IME/WAITCNT)");
     GBA_Core *core = CreateTestCore();
 
     core->cpu.regs.pc = 0x03000000;
@@ -343,12 +343,12 @@ bool Test_ARM_IORegister_SideEffects() {
 }
 
 bool Test_VRAM_OAM_Mirror_Align() {
-    TEST_START("VRAM/OAM 鏡像與對齊");
+    TEST_START("VRAM/OAM 映象與對齊");
     GBA_Core *core = CreateTestCore();
 
-    // VRAM 鏡像: 0x06018000 -> 0x06010000
+    // VRAM 映象: 0x06018000 -> 0x06010000
     GBA_MemoryWrite32(core, 0x06010000, 0xA1B2C3D4);
-    ASSERT_EQ(GBA_MemoryRead32(core, 0x06018000), 0xA1B2C3D4, "VRAM 鏡像讀取應一致");
+    ASSERT_EQ(GBA_MemoryRead32(core, 0x06018000), 0xA1B2C3D4, "VRAM 映象讀取應一致");
 
     // OAM 32 位對齊讀取
     GBA_MemoryWrite32(core, 0x07000000, 0x11223344);
@@ -437,7 +437,7 @@ bool Test_ARM_STRB_LDRB() {
     uint32_t ldrb_inst = 0xE5D12001;
     ARM_SingleDataTransfer(core, ldrb_inst);
 
-    ASSERT_EQ(core->cpu.regs.r[2], 0xAB, "LDRB 應讀回 8 位數據");
+    ASSERT_EQ(core->cpu.regs.r[2], 0xAB, "LDRB 應讀回 8 位資料");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -514,7 +514,7 @@ bool Test_ARM_MULLong() {
     uint32_t smull_inst = 0xE0C54392;  // SMULL R5,R4,R2,R3
     ARM_MultiplyLong(core, smull_inst);
     ASSERT_EQ(core->cpu.regs.r[4], 0xFFFFFFFA, "SMULL 低位應為 -6");
-    ASSERT_EQ(core->cpu.regs.r[5], 0xFFFFFFFF, "SMULL 高位應為符號擴展");
+    ASSERT_EQ(core->cpu.regs.r[5], 0xFFFFFFFF, "SMULL 高位應為符號擴充套件");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -922,7 +922,7 @@ bool Test_ARM_LDM_PC_PipelineFlush() {
     InstructionResult result = ARM_BlockDataTransfer(core, ldm_inst);
 
     ASSERT_TRUE(result.branch_taken, "LDM PC 應視為分支");
-    ASSERT_TRUE(result.pipeline_flush, "LDM PC 應刷新流水線");
+    ASSERT_TRUE(result.pipeline_flush, "LDM PC 應重新整理流水線");
     ASSERT_EQ(core->cpu.regs.pc, 0x08003000, "PC 應對齊並載入");
 
     GBA_CoreDestroy(core);
@@ -1041,7 +1041,7 @@ bool Test_CPU_ModeSwitch_IRQ_SVC_FIQ() {
     TEST_START("CPU 模式切換 IRQ/SVC/FIQ");
     GBA_Core *core = CreateTestCore();
 
-    // 初始 User/System 寄存器
+    // 初始 User/System 暫存器
     core->cpu.regs.priv_mode = CPU_STATE_SYSTEM;
     core->cpu.regs.r[8] = 0x100;
     core->cpu.regs.r[9] = 0x101;
@@ -1051,17 +1051,17 @@ bool Test_CPU_ModeSwitch_IRQ_SVC_FIQ() {
     core->cpu.regs.r[13] = 0x03007F00;
     core->cpu.regs.r[14] = 0x08000000;
 
-    // IRQ 模式寄存器
+    // IRQ 模式暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_IRQ);
     core->cpu.regs.r[13] = 0x03007FA0;
     core->cpu.regs.r[14] = 0x08000010;
 
-    // SVC 模式寄存器
+    // SVC 模式暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_SUPERVISOR);
     core->cpu.regs.r[13] = 0x03007FE0;
     core->cpu.regs.r[14] = 0x08000020;
 
-    // FIQ 模式寄存器 (含 r8-r12)
+    // FIQ 模式暫存器 (含 r8-r12)
     GBA_CPU_SwitchMode(core, CPU_STATE_FIQ);
     core->cpu.regs.r[8] = 0x200;
     core->cpu.regs.r[9] = 0x201;
@@ -1071,24 +1071,24 @@ bool Test_CPU_ModeSwitch_IRQ_SVC_FIQ() {
     core->cpu.regs.r[13] = 0x03007FF0;
     core->cpu.regs.r[14] = 0x08000030;
 
-    // 切回 System 應還原 User/System 寄存器
+    // 切回 System 應還原 User/System 暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_SYSTEM);
     ASSERT_EQ(core->cpu.regs.r[8], 0x100, "System r8 應還原");
     ASSERT_EQ(core->cpu.regs.r[12], 0x104, "System r12 應還原");
     ASSERT_EQ(core->cpu.regs.r[13], 0x03007F00, "System SP 應還原");
     ASSERT_EQ(core->cpu.regs.r[14], 0x08000000, "System LR 應還原");
 
-    // 切回 IRQ 應還原 IRQ 寄存器
+    // 切回 IRQ 應還原 IRQ 暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_IRQ);
     ASSERT_EQ(core->cpu.regs.r[13], 0x03007FA0, "IRQ SP 應還原");
     ASSERT_EQ(core->cpu.regs.r[14], 0x08000010, "IRQ LR 應還原");
 
-    // 切回 SVC 應還原 SVC 寄存器
+    // 切回 SVC 應還原 SVC 暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_SUPERVISOR);
     ASSERT_EQ(core->cpu.regs.r[13], 0x03007FE0, "SVC SP 應還原");
     ASSERT_EQ(core->cpu.regs.r[14], 0x08000020, "SVC LR 應還原");
 
-    // 切回 FIQ 應還原 FIQ 寄存器
+    // 切回 FIQ 應還原 FIQ 暫存器
     GBA_CPU_SwitchMode(core, CPU_STATE_FIQ);
     ASSERT_EQ(core->cpu.regs.r[8], 0x200, "FIQ r8 應還原");
     ASSERT_EQ(core->cpu.regs.r[12], 0x204, "FIQ r12 應還原");
@@ -1166,8 +1166,8 @@ bool Test_FIQ_From_THUMB() {
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_FIQ, "應切換到 FIQ 模式");
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "FIQ 應切回 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x0000001C, "PC 應跳到 FIQ 向量");
-    ASSERT_EQ(core->cpu.regs.fiq.r14_fiq, 0x08001000, "LR 應保存 THUMB 返回地址");
-    ASSERT_EQ(core->cpu.regs.fiq.spsr_fiq, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.fiq.r14_fiq, 0x08001000, "LR 應儲存 THUMB 返回地址");
+    ASSERT_EQ(core->cpu.regs.fiq.spsr_fiq, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應儲存原 CPSR");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 6), "應禁用 FIQ");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 7), "應禁用 IRQ");
 
@@ -1190,8 +1190,8 @@ bool Test_FIQ_From_ARM() {
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_FIQ, "應切換到 FIQ 模式");
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "FIQ 應保持 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x0000001C, "PC 應跳到 FIQ 向量");
-    ASSERT_EQ(core->cpu.regs.fiq.r14_fiq, 0x08001230, "LR 應保存 ARM 返回地址");
-    ASSERT_EQ(core->cpu.regs.fiq.spsr_fiq, CPU_STATE_SYSTEM, "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.fiq.r14_fiq, 0x08001230, "LR 應儲存 ARM 返回地址");
+    ASSERT_EQ(core->cpu.regs.fiq.spsr_fiq, CPU_STATE_SYSTEM, "SPSR 應儲存原 CPSR");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 6), "應禁用 FIQ");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 7), "應禁用 IRQ");
 
@@ -1258,8 +1258,8 @@ bool Test_IRQ_From_ARM() {
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_IRQ, "應切換到 IRQ 模式");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 7), "應禁用 IRQ");
     ASSERT_EQ(core->cpu.regs.pc, 0x00000018, "PC 應跳到 IRQ 向量");
-    ASSERT_EQ(core->cpu.regs.irq.r14, 0x080000FC, "LR 應保存返回地址");
-    ASSERT_EQ(core->cpu.regs.irq.spsr, CPU_STATE_SYSTEM, "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.irq.r14, 0x080000FC, "LR 應儲存返回地址");
+    ASSERT_EQ(core->cpu.regs.irq.spsr, CPU_STATE_SYSTEM, "SPSR 應儲存原 CPSR");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1283,8 +1283,8 @@ bool Test_IRQ_From_THUMB() {
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_IRQ, "應切換到 IRQ 模式");
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "IRQ 應切回 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x00000018, "PC 應跳到 IRQ 向量");
-    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000200, "LR 應保存 THUMB 返回地址");
-    ASSERT_EQ(core->cpu.regs.irq.spsr, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000200, "LR 應儲存 THUMB 返回地址");
+    ASSERT_EQ(core->cpu.regs.irq.spsr, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應儲存原 CPSR");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1311,8 +1311,8 @@ bool Test_IRQ_Vector_PipelineFlush_ARM_Boundary() {
     GBA_CPUCheckInterrupts(core);
 
     ASSERT_EQ(core->cpu.regs.pc, 0x00000018, "PC 應跳到 IRQ 向量");
-    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000000, "LR 應保存 ARM 返回地址");
-    ASSERT_EQ(core->cpu.regs.pipeline[0], 0x12345678, "IRQ 向量應刷新流水線");
+    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000000, "LR 應儲存 ARM 返回地址");
+    ASSERT_EQ(core->cpu.regs.pipeline[0], 0x12345678, "IRQ 向量應重新整理流水線");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1340,8 +1340,8 @@ bool Test_IRQ_Vector_PipelineFlush_THUMB_Boundary() {
 
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "IRQ 應切回 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x00000018, "PC 應跳到 IRQ 向量");
-    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000002, "LR 應保存 THUMB 返回地址");
-    ASSERT_EQ(core->cpu.regs.pipeline[0], 0xDEADBEEF, "IRQ 向量應刷新流水線");
+    ASSERT_EQ(core->cpu.regs.irq.r14, 0x08000002, "LR 應儲存 THUMB 返回地址");
+    ASSERT_EQ(core->cpu.regs.pipeline[0], 0xDEADBEEF, "IRQ 向量應重新整理流水線");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1370,7 +1370,7 @@ bool Test_FIQ_Priority_Over_IRQ_Vector() {
 
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_FIQ, "FIQ 應先進入");
     ASSERT_EQ(core->cpu.regs.pc, 0x0000001C, "PC 應跳到 FIQ 向量");
-    ASSERT_EQ(core->cpu.regs.pipeline[0], 0xDDCCBBAA, "FIQ 向量應刷新流水線");
+    ASSERT_EQ(core->cpu.regs.pipeline[0], 0xDDCCBBAA, "FIQ 向量應重新整理流水線");
     ASSERT_FALSE(core->cpu.state.fiq_line, "FIQ 線路應清除");
 
     GBA_CoreDestroy(core);
@@ -1393,8 +1393,8 @@ bool Test_SWI_From_ARM() {
     ASSERT_EQ(core->cpu.regs.priv_mode, CPU_STATE_SUPERVISOR, "應切換到 SVC 模式");
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 7), "應禁用 IRQ");
     ASSERT_EQ(core->cpu.regs.pc, 0x00000008, "PC 應跳到 SWI 向量");
-    ASSERT_EQ(core->cpu.regs.svc.r14, 0x080002FC, "LR 應保存返回地址");
-    ASSERT_EQ(core->cpu.regs.svc.spsr, CPU_STATE_SYSTEM, "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.svc.r14, 0x080002FC, "LR 應儲存返回地址");
+    ASSERT_EQ(core->cpu.regs.svc.spsr, CPU_STATE_SYSTEM, "SPSR 應儲存原 CPSR");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1417,8 +1417,8 @@ bool Test_SWI_From_THUMB() {
     ASSERT_TRUE(core->cpu.regs.cpsr & (1 << 7), "應禁用 IRQ");
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "SWI 應切回 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x00000008, "PC 應跳到 SWI 向量");
-    ASSERT_EQ(core->cpu.regs.svc.r14, 0x080003FE, "LR 應保存返回地址");
-    ASSERT_EQ(core->cpu.regs.svc.spsr, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應保存原 CPSR");
+    ASSERT_EQ(core->cpu.regs.svc.r14, 0x080003FE, "LR 應儲存返回地址");
+    ASSERT_EQ(core->cpu.regs.svc.spsr, (CPU_STATE_SYSTEM | (1 << 5)), "SPSR 應儲存原 CPSR");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1849,7 +1849,7 @@ bool Test_ARM_B() {
     
     core->cpu.regs.pc = 0x08000000;
     
-    // B 向前跳 16 字節 (EA000002: offset = 2 words = 8 bytes)
+    // B 向前跳 16 位元組 (EA000002: offset = 2 words = 8 bytes)
     uint32_t inst = 0xEA000002;
     InstructionResult result = ARM_Branch(core, inst);
     
@@ -1871,7 +1871,7 @@ bool Test_ARM_BL() {
     uint32_t inst = 0xEB000002;
     ARM_Branch(core, inst);
     
-    ASSERT_EQ(core->cpu.regs.r[14], 0x080000FC, "LR 應保存返回地址");
+    ASSERT_EQ(core->cpu.regs.r[14], 0x080000FC, "LR 應儲存返回地址");
     
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1892,7 +1892,7 @@ bool Test_ARM_BX_THUMB_to_ARM_Align() {
     ASSERT_EQ(core->cpu.regs.exec_mode, CPU_MODE_ARM, "應保持 ARM 模式");
     ASSERT_EQ(core->cpu.regs.pc, 0x08004000, "PC 應對齊到 4 位元組");
     ASSERT_TRUE(result.branch_taken, "BX 應視為分支");
-    ASSERT_TRUE(result.pipeline_flush, "BX 應刷新流水線");
+    ASSERT_TRUE(result.pipeline_flush, "BX 應重新整理流水線");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -1985,7 +1985,7 @@ bool Test_THUMB_CMP() {
     uint16_t inst = 0x282A;
     THUMB_MoveCmpAddSubImm(core, inst);
     
-    ASSERT_TRUE(GBA_CPU_GetFlag_Z(&core->cpu), "Z 標誌應設置（相等）");
+    ASSERT_TRUE(GBA_CPU_GetFlag_Z(&core->cpu), "Z 標誌應設定（相等）");
     
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -2151,7 +2151,7 @@ bool Test_THUMB_LDRH_STRH() {
     uint16_t ldrh_inst = 0x884A;
     THUMB_LoadStoreHalfword(core, ldrh_inst);
 
-    ASSERT_EQ(core->cpu.regs.r[2], 0x0000ABCD, "LDRH 應讀回 16 位數據");
+    ASSERT_EQ(core->cpu.regs.r[2], 0x0000ABCD, "LDRH 應讀回 16 位資料");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -2343,12 +2343,12 @@ bool Test_THUMB_SignedLoad() {
     // LDRSB R0, [R1, R2] (5C88)
     uint16_t ldrsb_inst = 0x5C88;
     THUMB_LoadStoreSigned(core, ldrsb_inst);
-    ASSERT_EQ(core->cpu.regs.r[0], 0xFFFFFF80, "LDRSB 應符號擴展");
+    ASSERT_EQ(core->cpu.regs.r[0], 0xFFFFFF80, "LDRSB 應符號擴充套件");
 
     // LDRSH R0, [R1, R2] (5E88)
     uint16_t ldrsh_inst = 0x5E88;
     THUMB_LoadStoreSigned(core, ldrsh_inst);
-    ASSERT_EQ(core->cpu.regs.r[0], 0xFFFFFF80, "LDRSH 應符號擴展");
+    ASSERT_EQ(core->cpu.regs.r[0], 0xFFFFFF80, "LDRSH 應符號擴充套件");
 
     GBA_CoreDestroy(core);
     TEST_PASS();
@@ -2389,7 +2389,7 @@ bool Test_ARM_Conditional_EQ() {
     TEST_START("ARM 條件執行 (EQ)");
     GBA_Core *core = CreateTestCore();
     
-    // 設置 Z 標誌
+    // 設定 Z 標誌
     SetFlags(core, false, true, false, false);
     
     core->cpu.regs.r[0] = 0;
@@ -2415,7 +2415,7 @@ bool Test_ARM_Conditional_EQ() {
 }
 
 /* ============================================================================
- * 主測試運行器
+ * 主測試執行器
  * ============================================================================ */
 
 void RunAllTests() {
@@ -2424,8 +2424,8 @@ void RunAllTests() {
     printf("║   GBA CPU 指令測試套件                      ║\n");
     printf("╚══════════════════════════════════════════════╝\n");
     
-    // ARM 數據處理指令
-    printf("\n【ARM 數據處理指令】\n");
+    // ARM 資料處理指令
+    printf("\n【ARM 資料處理指令】\n");
     Test_ARM_ADD();
     Test_ARM_SUB();
     Test_ARM_MOV();
@@ -2531,14 +2531,14 @@ void RunAllTests() {
     printf("║   測試結果                                   ║\n");
     printf("╠══════════════════════════════════════════════╣\n");
     printf("║   總測試數: %-4d                            ║\n", tests_run);
-    printf("║   通過:     %-4d                            ║\n", tests_passed);
+    printf("║   透過:     %-4d                            ║\n", tests_passed);
     printf("║   失敗:     %-4d                            ║\n", tests_failed);
-    printf("║   通過率:   %.1f%%                          ║\n", 
+    printf("║   透過率:   %.1f%%                          ║\n", 
            tests_run > 0 ? (tests_passed * 100.0 / tests_run) : 0.0);
     printf("╚══════════════════════════════════════════════╝\n");
     
     if (tests_failed == 0) {
-        printf("\n🎉 所有測試通過！\n\n");
+        printf("\n🎉 所有測試透過！\n\n");
     } else {
         printf("\n⚠️  有 %d 個測試失敗，請檢查\n\n", tests_failed);
     }

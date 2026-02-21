@@ -1,6 +1,6 @@
 /**
- * GBA 核心系统实现
- * 负责整个模拟器的生命周期管理和主循环
+ * GBA 核心系統實現
+ * 負責整個模擬器的生命週期管理和主迴圈
  */
 
 #include "gba_core.h"
@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 /* ============================================================================
- * 核心创建与销毁
+ * 核心建立與銷燬
  * ============================================================================ */
 
 GBA_Core* GBA_CoreCreate(void) {
@@ -20,7 +20,7 @@ GBA_Core* GBA_CoreCreate(void) {
         return NULL;
     }
     
-    // 分配内存区域
+    // 分配記憶體區域
     core->memory.bios = (uint8_t*)malloc(16 * 1024);
     core->memory.ewram = (uint8_t*)malloc(256 * 1024);
     core->memory.iwram = (uint8_t*)malloc(32 * 1024);
@@ -30,7 +30,7 @@ GBA_Core* GBA_CoreCreate(void) {
     core->memory.oam = (uint8_t*)malloc(1024);
     core->memory.sram = (uint8_t*)malloc(64 * 1024);
     
-    // 检查分配是否成功
+    // 檢查分配是否成功
     if (!core->memory.bios || !core->memory.ewram || !core->memory.iwram ||
         !core->memory.io_registers || !core->memory.palette || 
         !core->memory.vram || !core->memory.oam || !core->memory.sram) {
@@ -39,7 +39,7 @@ GBA_Core* GBA_CoreCreate(void) {
         return NULL;
     }
     
-    // 分配帧缓冲 (240 × 160 × BGRA)
+    // 分配幀緩衝 (240 × 160 × BGRA)
     core->ppu.framebuffer = (uint32_t*)malloc(240 * 160 * sizeof(uint32_t));
     if (!core->ppu.framebuffer) {
         fprintf(stderr, "Failed to allocate framebuffer\n");
@@ -47,10 +47,10 @@ GBA_Core* GBA_CoreCreate(void) {
         return NULL;
     }
     
-    // 初始化为黑色
+    // 初始化為黑色
     memset(core->ppu.framebuffer, 0, 240 * 160 * sizeof(uint32_t));
     
-    // 设置默认等待状态（参考 GBATEK）
+    // 設定預設等待狀態（參考 GBATEK）
     core->memory.wait_states.sram = 4;
     core->memory.wait_states.ws0_n = 4;
     core->memory.wait_states.ws0_s = 2;
@@ -62,7 +62,7 @@ GBA_Core* GBA_CoreCreate(void) {
     // 初始化 DMA
     core->dma.active_channel = -1;
     
-    // 重置到初始状态
+    // 重置到初始狀態
     GBA_CoreReset(core);
     
     printf("GBA Core created successfully\n");
@@ -95,18 +95,18 @@ void GBA_CoreReset(GBA_Core *core) {
     
     // 重置 CPU
     memset(&core->cpu, 0, sizeof(GBA_CPU));
-    core->cpu.regs.cpsr = CPU_STATE_SYSTEM | (1 << 7);  // 系统模式，IRQ 禁用
-    core->cpu.regs.exec_addr = 0x00000000;              // BIOS 入口（执行地址）
+    core->cpu.regs.cpsr = CPU_STATE_SYSTEM | (1 << 7);  // 系統模式，IRQ 禁用
+    core->cpu.regs.exec_addr = 0x00000000;              // BIOS 入口（執行地址）
     core->cpu.regs.pc = 0x00000008;                     // PC = exec_addr + 8 (ARM)
     core->cpu.regs.exec_mode = CPU_MODE_ARM;
     core->cpu.regs.priv_mode = CPU_STATE_SYSTEM;
     
-    // 设置堆栈指针（参考 GBATEK）
+    // 設定堆疊指標（參考 GBATEK）
     core->cpu.regs.r[13] = 0x03007F00;        // SP_sys
     core->cpu.regs.irq.r13 = 0x03007FA0;      // SP_irq
     core->cpu.regs.svc.r13 = 0x03007FE0;      // SP_svc
 
-    // 同步 User/System 寄存器快照
+    // 同步 User/System 暫存器快照
     core->cpu.regs.usr.r8_usr = core->cpu.regs.r[8];
     core->cpu.regs.usr.r9_usr = core->cpu.regs.r[9];
     core->cpu.regs.usr.r10_usr = core->cpu.regs.r[10];
@@ -115,7 +115,7 @@ void GBA_CoreReset(GBA_Core *core) {
     core->cpu.regs.usr.r13_usr = core->cpu.regs.r[13];
     core->cpu.regs.usr.r14_usr = core->cpu.regs.r[14];
     
-    // 清空内存
+    // 清空記憶體
     if (core->memory.ewram) memset(core->memory.ewram, 0, 256 * 1024);
     if (core->memory.iwram) memset(core->memory.iwram, 0, 32 * 1024);
     if (core->memory.io_registers) memset(core->memory.io_registers, 0, 1024);
@@ -124,22 +124,22 @@ void GBA_CoreReset(GBA_Core *core) {
     if (core->memory.oam) memset(core->memory.oam, 0, 1024);
     if (core->memory.sram) memset(core->memory.sram, 0xFF, 64 * 1024);
     
-    // 重置子系统
+    // 重置子系統
     memset(&core->interrupt, 0, sizeof(GBA_Interrupt));
     memset(&core->timer, 0, sizeof(GBA_Timer));
     memset(&core->dma, 0, sizeof(GBA_DMA));
     memset(&core->ppu, 0, sizeof(GBA_PPU));
     
-    // 重新设置帧缓冲指针（因为 memset 会清空）
+    // 重新設定幀緩衝指標（因為 memset 會清空）
     core->ppu.framebuffer = (uint32_t*)malloc(240 * 160 * sizeof(uint32_t));
     memset(core->ppu.framebuffer, 0, 240 * 160 * sizeof(uint32_t));
     
     core->dma.active_channel = -1;
     
-    // 填充流水线
+    // 填充流水線
     GBA_CPUFlushPipeline(core);
     
-    // 重置全局状态
+    // 重置全域性狀態
     core->state.running = true;
     core->state.paused = false;
     core->state.frame_number = 0;
@@ -148,7 +148,7 @@ void GBA_CoreReset(GBA_Core *core) {
 }
 
 /* ============================================================================
- * ROM/BIOS 载入
+ * ROM/BIOS 載入
  * ============================================================================ */
 
 int GBA_CoreLoadBIOS(GBA_Core *core, const uint8_t *data, size_t size) {
@@ -180,7 +180,7 @@ int GBA_CoreLoadROM(GBA_Core *core, const uint8_t *data, size_t size) {
         size = 32 * 1024 * 1024;
     }
     
-    // 释放旧 ROM
+    // 釋放舊 ROM
     if (core->memory.rom) {
         free(core->memory.rom);
     }
@@ -195,7 +195,7 @@ int GBA_CoreLoadROM(GBA_Core *core, const uint8_t *data, size_t size) {
     memcpy(core->memory.rom, data, size);
     core->memory.rom_size = size;
     
-    // 打印 ROM 信息
+    // 列印 ROM 資訊
     char title[13];
     memcpy(title, core->memory.rom + 0xA0, 12);
     title[12] = '\0';
@@ -210,7 +210,7 @@ int GBA_CoreLoadROM(GBA_Core *core, const uint8_t *data, size_t size) {
 }
 
 /* ============================================================================
- * 主循环
+ * 主迴圈
  * ============================================================================ */
 
 uint32_t GBA_CoreRunFrame(GBA_Core *core) {
@@ -221,19 +221,19 @@ uint32_t GBA_CoreRunFrame(GBA_Core *core) {
     core->cpu.cycles.this_frame = 0;
     
     while (core->cpu.cycles.this_frame < CYCLES_PER_FRAME) {
-        // 执行一条指令
+        // 執行一條指令
         InstructionResult result = GBA_CPUStep(core);
         
-        // 更新子系统
+        // 更新子系統
         GBA_PPUUpdate(core, result.cycles);
         GBA_TimerUpdate(core, result.cycles);
         
-        // DMA 有最高优先级
+        // DMA 有最高優先順序
         if (GBA_DMAIsActive(core)) {
             GBA_DMAUpdate(core);
         }
         
-        // 检查是否需要暂停
+        // 檢查是否需要暫停
         if (core->state.paused || !core->state.running) {
             break;
         }
@@ -275,7 +275,7 @@ const uint32_t* GBA_CoreGetFramebuffer(const GBA_Core *core) {
 }
 
 /* ============================================================================
- * 调试接口
+ * 除錯介面
  * ============================================================================ */
 
 void GBA_CoreDumpState(const GBA_Core *core) {

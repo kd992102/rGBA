@@ -1,6 +1,6 @@
 /**
- * GBA模拟器主程序 - 新架构版本
- * 使用统一的 GBA_Core 接口
+ * GBA模擬器主程式 - 新架構版本
+ * 使用統一的 GBA_Core 介面
  */
 
 #include <stdio.h>
@@ -73,7 +73,7 @@ static void ApplyMgbaBiosState(GBA_Core *gba) {
     cpu->regs.usr.r13_usr = cpu->regs.r[13];
     cpu->regs.usr.r14_usr = cpu->regs.r[14];
     
-    // 清除所有 IO 寄存器（BIOS 入口状態下未初始化）
+    // 清除所有 IO 暫存器（BIOS 入口狀態下未初始化）
     memset(gba->memory.io_registers, 0, 0x400);
 
     GBA_CPUFlushPipeline(gba);
@@ -158,7 +158,7 @@ static void DumpInstructions(GBA_Core *gba, uint32_t skip, uint32_t count) {
             gba->cpu.cycles.instruction, 
             (unsigned long long)gba->cpu.cycles.total);
         
-        // 打印寄存器狀態（與 mGBA 格式相同）
+        // 列印暫存器狀態（與 mGBA 格式相同）
         printf(" r0: %08X   r1: %08X   r2: %08X   r3: %08X\n",
             gba->cpu.regs.r[0], gba->cpu.regs.r[1], gba->cpu.regs.r[2], gba->cpu.regs.r[3]);
         printf(" r4: %08X   r5: %08X   r6: %08X   r7: %08X\n",
@@ -168,7 +168,7 @@ static void DumpInstructions(GBA_Core *gba, uint32_t skip, uint32_t count) {
         printf("r12: %08X  r13: %08X  r14: %08X  r15: %08X\n",
             gba->cpu.regs.r[12], gba->cpu.regs.r[13], gba->cpu.regs.r[14], pc);
         
-        // 打印 CPSR 和標誌位
+        // 列印 CPSR 和標誌位
         bool N = (cpsr >> 31) & 1;
         bool Z = (cpsr >> 30) & 1;
         bool C = (cpsr >> 29) & 1;
@@ -184,19 +184,19 @@ static void DumpInstructions(GBA_Core *gba, uint32_t skip, uint32_t count) {
     DumpIOSnapshot(gba);
 }
 
-/* SDL 全局变量 */
+/* SDL 全域性變數 */
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Texture *texture = NULL;
 
 /* ============================================================================
- * 文件加载utility
+ * 檔案載入utility
  * ============================================================================ */
 
 uint8_t* LoadFile(const char *filename, size_t *out_size) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
-        fprintf(stderr, "[错误] 无法打开文件: %s\n", filename);
+        fprintf(stderr, "[錯誤] 無法開啟檔案: %s\n", filename);
         return NULL;
     }
     
@@ -206,7 +206,7 @@ uint8_t* LoadFile(const char *filename, size_t *out_size) {
     
     uint8_t *data = (uint8_t*)malloc(size);
     if (!data) {
-        fprintf(stderr, "[错误] 内存分配失败: %zu bytes\n", size);
+        fprintf(stderr, "[錯誤] 記憶體分配失敗: %zu bytes\n", size);
         fclose(file);
         return NULL;
     }
@@ -215,7 +215,7 @@ uint8_t* LoadFile(const char *filename, size_t *out_size) {
     fclose(file);
     
     if (read_size != size) {
-        fprintf(stderr, "[错误] 文件读取不完整: %zu / %zu bytes\n", read_size, size);
+        fprintf(stderr, "[錯誤] 檔案讀取不完整: %zu / %zu bytes\n", read_size, size);
         free(data);
         return NULL;
     }
@@ -232,11 +232,11 @@ int InitSDL() {
     printf("[SDL] 初始化 SDL...\n");
     
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
-        fprintf(stderr, "[错误] SDL 初始化失败: %s\n", SDL_GetError());
+        fprintf(stderr, "[錯誤] SDL 初始化失敗: %s\n", SDL_GetError());
         return -1;
     }
     
-    // 创建窗口（2倍放大）
+    // 建立視窗（2倍放大）
     window = SDL_CreateWindow(
         "rGBA Emulator - New Architecture",
         SDL_WINDOWPOS_CENTERED,
@@ -246,21 +246,21 @@ int InitSDL() {
     );
     
     if (!window) {
-        fprintf(stderr, "[错误] 无法创建窗口: %s\n", SDL_GetError());
+        fprintf(stderr, "[錯誤] 無法建立視窗: %s\n", SDL_GetError());
         SDL_Quit();
         return -1;
     }
     
-    // 创建渲染器
+    // 建立渲染器
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
-        fprintf(stderr, "[错误] 无法创建渲染器: %s\n", SDL_GetError());
+        fprintf(stderr, "[錯誤] 無法建立渲染器: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
         return -1;
     }
     
-    // 创建纹理
+    // 建立紋理
     texture = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_ABGR8888,  // GBA 使用 ABGR
@@ -269,7 +269,7 @@ int InitSDL() {
     );
     
     if (!texture) {
-        fprintf(stderr, "[错误] 无法创建纹理: %s\n", SDL_GetError());
+        fprintf(stderr, "[錯誤] 無法建立紋理: %s\n", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -301,55 +301,55 @@ void CleanupSDL() {
 }
 
 /* ============================================================================
- * 主程序
+ * 主程式
  * ============================================================================ */
 
 int main(int argc, char *argv[]) {
-    printf("========== rGBA 模拟器（新架构）==========\n");
-    printf("架构版本: 现代化设计\n");
-    printf("特性: 无全局变量、统一接口、高性能\n");
+    printf("========== rGBA 模擬器（新架構）==========\n");
+    printf("架構版本: 現代化設計\n");
+    printf("特性: 無全域性變數、統一介面、高效能\n");
     printf("=========================================\n\n");
     
-    /* === 第一阶段：创建GBA核心 === */
-    printf("[初始化] 创建 GBA Core...\n");
+    /* === 第一階段：建立GBA核心 === */
+    printf("[初始化] 建立 GBA Core...\n");
     GBA_Core *gba = GBA_CoreCreate();
     if (!gba) {
-        fprintf(stderr, "[错误] GBA Core 创建失败\n");
+        fprintf(stderr, "[錯誤] GBA Core 建立失敗\n");
         return 1;
     }
     
-    /* === 第二阶段：加载BIOS === */
-    printf("[初始化] 加载 BIOS: %s\n", BIOS_FILE);
+    /* === 第二階段：載入BIOS === */
+    printf("[初始化] 載入 BIOS: %s\n", BIOS_FILE);
     size_t bios_size = 0;
     uint8_t *bios_data = LoadFile(BIOS_FILE, &bios_size);
     
     if (!bios_data) {
-        fprintf(stderr, "[错误] 无法加载 BIOS\n");
+        fprintf(stderr, "[錯誤] 無法載入 BIOS\n");
         GBA_CoreDestroy(gba);
         return 1;
     }
     
     if (GBA_CoreLoadBIOS(gba, bios_data, bios_size) != 0) {
-        fprintf(stderr, "[错误] BIOS 加载失败\n");
+        fprintf(stderr, "[錯誤] BIOS 載入失敗\n");
         free(bios_data);
         GBA_CoreDestroy(gba);
         return 1;
     }
     free(bios_data);
     
-    /* === 第三阶段：加载ROM === */
-    printf("[初始化] 加载 ROM: %s\n", ROM_FILE);
+    /* === 第三階段：載入ROM === */
+    printf("[初始化] 載入 ROM: %s\n", ROM_FILE);
     size_t rom_size = 0;
     uint8_t *rom_data = LoadFile(ROM_FILE, &rom_size);
     
     if (!rom_data) {
-        fprintf(stderr, "[错误] 无法加载 ROM\n");
+        fprintf(stderr, "[錯誤] 無法載入 ROM\n");
         GBA_CoreDestroy(gba);
         return 1;
     }
     
     if (GBA_CoreLoadROM(gba, rom_data, rom_size) != 0) {
-        fprintf(stderr, "[错误] ROM 加载失败\n");
+        fprintf(stderr, "[錯誤] ROM 載入失敗\n");
         free(rom_data);
         GBA_CoreDestroy(gba);
         return 1;
@@ -374,7 +374,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* === 第四阶段：初始化SDL === */
+    /* === 第四階段：初始化SDL === */
     if (ENABLE_SDL) {
         if (InitSDL() != 0) {
             GBA_CoreDestroy(gba);
@@ -387,26 +387,26 @@ int main(int argc, char *argv[]) {
         ApplyMgbaBiosState(gba);
     }
     
-    /* === 第五阶段：主循环 === */
-    printf("\n[运行] 进入主循环...\n\n");
+    /* === 第五階段：主迴圈 === */
+    printf("\n[執行] 進入主迴圈...\n\n");
     
     bool running = true;
     
     while (running) {
         if (ENABLE_SDL) {
-            /* 处理SDL事件 */
+            /* 處理SDL事件 */
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
                     case SDL_QUIT:
                         running = false;
-                        printf("\n[事件] 关闭窗口\n");
+                        printf("\n[事件] 關閉視窗\n");
                         break;
                         
                     case SDL_KEYDOWN:
                         if (event.key.keysym.sym == SDLK_ESCAPE) {
                             running = false;
-                            printf("\n[事件] 按下 ESC 键\n");
+                            printf("\n[事件] 按下 ESC 鍵\n");
                         } else if (event.key.keysym.sym == SDLK_SPACE) {
                             printf("\n");
                             GBA_CoreDumpState(gba);
@@ -416,15 +416,15 @@ int main(int argc, char *argv[]) {
             }
         }
         
-        /* 执行一帧 (280,896 周期) */
+        /* 執行一幀 (280,896 週期) */
         uint32_t cycles_executed = GBA_CoreRunFrame(gba);
         frame_count++;
         
         if (ENABLE_SDL) {
-            /* 获取帧缓冲 */
+            /* 獲取幀緩衝 */
             const uint32_t *framebuffer = GBA_CoreGetFramebuffer(gba);
             
-            /* 更新SDL纹理 */
+            /* 更新SDL紋理 */
             void *pixels;
             int pitch;
             if (SDL_LockTexture(texture, NULL, &pixels, &pitch) == 0) {
@@ -446,7 +446,7 @@ int main(int argc, char *argv[]) {
                     float seconds = elapsed / 1000.0f;
                     float fps = frame_count / seconds;
                     
-                    printf("[性能] 帧数: %u | FPS: %.2f | 总周期: %llu | 本幀周期: %u\n",
+                    printf("[效能] 幀數: %u | FPS: %.2f | 總週期: %llu | 本幀週期: %u\n",
                            frame_count, fps,
                            (unsigned long long)gba->cpu.cycles.total,
                            cycles_executed);
@@ -454,7 +454,7 @@ int main(int argc, char *argv[]) {
                     last_stats_ticks = current_ticks;
                 }
             }
-            printf("[状态] 帧数: %u | PC: 0x%08X | CPSR: 0x%08X | 模式: %s/%s\n",
+            printf("[狀態] 幀數: %u | PC: 0x%08X | CPSR: 0x%08X | 模式: %s/%s\n",
                    frame_count,
                    gba->cpu.regs.pc,
                    gba->cpu.regs.cpsr,
@@ -466,17 +466,17 @@ int main(int argc, char *argv[]) {
             running = false;
         }
         
-        /* 帧率限制（可选，避免CPU占用过高）*/
-        // SDL_Delay(1); // 大约限制到 1000 FPS
+        /* 幀率限制（可選，避免CPU佔用過高）*/
+        // SDL_Delay(1); // 大約限制到 1000 FPS
     }
     
 cleanup:
-    /* === 第六阶段：清理 === */
-    printf("\n[清理] 释放资源...\n");
+    /* === 第六階段：清理 === */
+    printf("\n[清理] 釋放資源...\n");
     
-    printf("\n========== 最终统计 ==========\n");
-    printf("总帧数: %u\n", frame_count);
-    printf("总周期: %llu\n", (unsigned long long)gba->cpu.cycles.total);
+    printf("\n========== 最終統計 ==========\n");
+    printf("總幀數: %u\n", frame_count);
+    printf("總週期: %llu\n", (unsigned long long)gba->cpu.cycles.total);
     if (ENABLE_SDL) {
         printf("平均 FPS: %.2f\n", 
                frame_count / ((SDL_GetTicks64() - start_ticks) / 1000.0f));
@@ -488,6 +488,6 @@ cleanup:
     }
     GBA_CoreDestroy(gba);
     
-    printf("[完成] 模拟器已关闭\n");
+    printf("[完成] 模擬器已關閉\n");
     return 0;
 }

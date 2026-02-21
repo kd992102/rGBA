@@ -1,5 +1,5 @@
 /**
- * GBA 系統簡單測試程序
+ * GBA 系統簡單測試程式
  * 驗證核心架構是否正常運作
  */
 
@@ -12,7 +12,7 @@
 #include "gba_system.h"
 #include "gba_interrupt.h"
 
-/* 全局變數 (與 main.c 一致) */
+/* 全域性變數 (與 main.c 一致) */
 Gba_Cpu *cpu;
 GbaMem *Mem;
 Gba_System gba_system;
@@ -28,11 +28,11 @@ void test_gba_system_init() {
         printf("❌ 記憶體分配失敗\n");
         return;
     }
-    printf("✓ CPU 和 內存結構分配成功\n");
+    printf("✓ CPU 和 記憶體結構分配成功\n");
     
-    /* 初始化內存 */
+    /* 初始化記憶體 */
     Init_GbaMem();
-    printf("✓ 內存系統初始化成功\n");
+    printf("✓ 記憶體系統初始化成功\n");
     
     /* 初始化 GBA 系統 */
     if (GbaSystem_Init(&gba_system) != 0) {
@@ -61,12 +61,12 @@ void test_gba_system_init() {
     printf("✓ 初始掃描線正確: 0\n");
     
     if (gba_system.ppu.framebuffer == NULL) {
-        printf("❌ 幀緩衝指針為空\n");
+        printf("❌ 幀緩衝指標為空\n");
         return;
     }
     printf("✓ 幀緩衝分配成功（240x160x4 bytes）\n");
     
-    printf("✅ 測試 1 通過！\n");
+    printf("✅ 測試 1 透過！\n");
 }
 
 void test_ppu_timing() {
@@ -111,7 +111,7 @@ void test_ppu_timing() {
         printf("✓ 掃描線在幀結束時正確回零\n");
     }
     
-    printf("✅ 測試 2 通過！\n");
+    printf("✅ 測試 2 透過！\n");
 }
 
 void test_interrupt_system() {
@@ -142,8 +142,8 @@ void test_interrupt_system() {
         return;
     }
     
-    /* 測試 3: 設置中斷主控 */
-    printf("\n測試: 設置中斷主控啟用\n");
+    /* 測試 3: 設定中斷主控 */
+    printf("\n測試: 設定中斷主控啟用\n");
     Interrupt_SetMasterEnable(&gba_system, 1);
     if (gba_system.interrupt.IME) {
         printf("✓ 中斷主控啟用成功\n");
@@ -152,8 +152,8 @@ void test_interrupt_system() {
         return;
     }
     
-    /* 測試 4: 獲取最高優先級中斷 */
-    printf("\n測試: 獲取最高優先級中斷\n");
+    /* 測試 4: 獲取最高優先順序中斷 */
+    printf("\n測試: 獲取最高優先順序中斷\n");
     uint16_t highest = Interrupt_GetHighestPending(&gba_system);
     if (highest == INT_VBLANK) {
         printf("✓ 正確識別為 V-Blank 中斷\n");
@@ -172,7 +172,7 @@ void test_interrupt_system() {
         return;
     }
     
-    printf("✅ 測試 3 通過！\n");
+    printf("✅ 測試 3 透過！\n");
 }
 
 void test_multiple_frames() {
@@ -211,11 +211,11 @@ void test_multiple_frames() {
                (long long)cycles_diff - expected_cycles);
     }
     
-    printf("✅ 測試 4 通過！\n");
+    printf("✅ 測試 4 透過！\n");
 }
 
 void test_performance_stats() {
-    printf("\n========== 測試 5: 性能統計 ==========\n");
+    printf("\n========== 測試 5: 效能統計 ==========\n");
     
     GbaSystem_PrintStats(&gba_system);
 }

@@ -2,11 +2,11 @@
  * GBA 模擬器核心架構 - 現代化設計
  * 
  * 設計原則：
- * 1. 無全局變數 - 所有狀態封裝在結構中
+ * 1. 無全域性變數 - 所有狀態封裝在結構中
  * 2. 清晰的所有權 - 明確的資源管理
- * 3. 統一接口 - 一致的函數簽名
- * 4. 高性能 - 內聯函數、查找表、緩存友好
- * 5. 可測試性 - 易於單元測試和調試
+ * 3. 統一介面 - 一致的函式簽名
+ * 4. 高效能 - 行內函數、查詢表、快取友好
+ * 5. 可測試性 - 易於單元測試和除錯
  */
 
 #ifndef GBA_CORE_H
@@ -17,7 +17,7 @@
 #include <stdbool.h>
 
 /* ============================================================================
- * 前向聲明
+ * 前向宣告
  * ============================================================================ */
 typedef struct GBA_Core GBA_Core;
 typedef struct GBA_CPU GBA_CPU;
@@ -50,20 +50,20 @@ typedef enum {
  * 指令執行結果
  * ============================================================================ */
 typedef struct {
-    uint8_t  cycles;          // 指令消耗的周期數
+    uint8_t  cycles;          // 指令消耗的週期數
     bool     branch_taken;    // 是否發生分支
-    bool     pipeline_flush;  // 是否需要刷新流水線
+    bool     pipeline_flush;  // 是否需要重新整理流水線
     bool     mode_changed;    // 是否切換了 ARM/THUMB 模式
 } InstructionResult;
 
 /* ============================================================================
- * CPU 寄存器組
+ * CPU 暫存器組
  * ============================================================================ */
 typedef struct {
-    // 當前可見的寄存器 (R0-R14)
+    // 當前可見的暫存器 (R0-R14)
     uint32_t r[15];
     
-    // 程序計數器 (R15) - 帶 pipeline offset
+    // 程式計數器 (R15) - 帶 pipeline offset
     // ARM 模式: pc = exec_addr + 8
     // THUMB 模式: pc = exec_addr + 4
     uint32_t pc;
@@ -71,10 +71,10 @@ typedef struct {
     // 當前執行地址 (實際執行指令的記憶體位置)
     uint32_t exec_addr;
     
-    // 當前程序狀態寄存器
+    // 當前程式狀態暫存器
     uint32_t cpsr;
     
-    // 銀行寄存器 (Banked Registers)
+    // 銀行暫存器 (Banked Registers)
     struct {
         uint32_t r8_fiq, r9_fiq, r10_fiq, r11_fiq, r12_fiq;
         uint32_t r13_fiq, r14_fiq;  // SP_fiq, LR_fiq
@@ -86,7 +86,7 @@ typedef struct {
         uint32_t spsr;
     } irq, svc, abt, und;
 
-    // User/System 模式寄存器快照
+    // User/System 模式暫存器快照
     struct {
         uint32_t r8_usr, r9_usr, r10_usr, r11_usr, r12_usr;
         uint32_t r13_usr, r14_usr;
@@ -107,11 +107,11 @@ typedef struct {
 struct GBA_CPU {
     GBA_CPU_Registers regs;
     
-    // 周期追蹤
+    // 週期追蹤
     struct {
-        uint64_t total;           // 總執行周期
-        uint32_t this_frame;      // 本幀已執行周期
-        uint32_t instruction;     // 當前指令周期
+        uint64_t total;           // 總執行週期
+        uint32_t this_frame;      // 本幀已執行週期
+        uint32_t instruction;     // 當前指令週期
     } cycles;
     
     // 狀態標誌
@@ -121,7 +121,7 @@ struct GBA_CPU {
         bool fiq_line;            // FIQ 線狀態
     } state;
     
-    // 調試信息 (可選，Release 版本可移除)
+    // 除錯資訊 (可選，Release 版本可移除)
     #ifdef GBA_DEBUG
     struct {
         uint32_t last_pc;
@@ -176,10 +176,10 @@ struct GBA_Memory {
         uint8_t ws2_n, ws2_s;
     } wait_states;
     
-    // DMA 正在訪問的區域 (用於總線仲裁)
+    // DMA 正在訪問的區域 (用於匯流排仲裁)
     bool dma_active[4];
     
-    // 訪問統計 (調試用)
+    // 訪問統計 (除錯用)
     #ifdef GBA_DEBUG
     struct {
         uint64_t reads[MEM_REGION_COUNT];
@@ -213,7 +213,7 @@ struct GBA_Interrupt {
     uint16_t IF;   // Interrupt Request Flags
     uint16_t IME;  // Interrupt Master Enable
     
-    // 待處理的中斷 (按優先級排序)
+    // 待處理的中斷 (按優先順序排序)
     uint16_t pending;
     
     // 中斷處理中標誌
@@ -245,7 +245,7 @@ struct GBA_PPU {
     bool in_vblank;
     bool in_hblank;
     
-    // 渲染緩存 (用於加速)
+    // 渲染快取 (用於加速)
     struct {
         bool bg_enabled[4];
         bool obj_enabled;
@@ -303,14 +303,14 @@ struct GBA_Core {
     GBA_Timer     timer;
     GBA_DMA       dma;
     
-    // 全局狀態
+    // 全域性狀態
     struct {
         uint64_t frame_number;
         bool     running;
         bool     paused;
     } state;
     
-    // 事件調度器 (可選，用於精確時序)
+    // 事件排程器 (可選，用於精確時序)
     #ifdef GBA_USE_SCHEDULER
     struct {
         uint32_t next_event_cycle;
@@ -327,7 +327,7 @@ struct GBA_Core {
 
 /**
  * 初始化 GBA 核心
- * @return 成功返回指向 GBA_Core 的指針，失敗返回 NULL
+ * @return 成功返回指向 GBA_Core 的指標，失敗返回 NULL
  */
 GBA_Core* GBA_CoreCreate(void);
 
@@ -343,36 +343,36 @@ void GBA_CoreReset(GBA_Core *core);
 
 /**
  * 載入 BIOS
- * @param data BIOS 數據 (必須 16 KB)
+ * @param data BIOS 資料 (必須 16 KB)
  * @return 成功返回 0，失敗返回 -1
  */
 int GBA_CoreLoadBIOS(GBA_Core *core, const uint8_t *data, size_t size);
 
 /**
  * 載入 ROM
- * @param data ROM 數據
+ * @param data ROM 資料
  * @param size ROM 大小
  * @return 成功返回 0，失敗返回 -1
  */
 int GBA_CoreLoadROM(GBA_Core *core, const uint8_t *data, size_t size);
 
 /**
- * 執行一幀 (280,896 周期)
- * @return 實際執行的周期數
+ * 執行一幀 (280,896 週期)
+ * @return 實際執行的週期數
  */
 uint32_t GBA_CoreRunFrame(GBA_Core *core);
 void GBA_CoreDumpState(const GBA_Core *core);
 
 /**
- * 執行指定數量的周期
- * @param cycles 要執行的周期數
- * @return 實際執行的周期數
+ * 執行指定數量的週期
+ * @param cycles 要執行的週期數
+ * @return 實際執行的週期數
  */
 uint32_t GBA_CoreRunCycles(GBA_Core *core, uint32_t cycles);
 
 /**
- * 獲取幀緩衝指針
- * @return 指向 240×160 BGRA8888 幀緩衝的指針
+ * 獲取幀緩衝指標
+ * @return 指向 240×160 BGRA8888 幀緩衝的指標
  */
 const uint32_t* GBA_CoreGetFramebuffer(const GBA_Core *core);
 
@@ -397,7 +397,7 @@ void GBA_CPUCheckInterrupts(GBA_Core *core);
 void GBA_CPU_SwitchMode(GBA_Core *core, CPU_PrivilegeMode new_mode);
 
 /**
- * 刷新流水線
+ * 重新整理流水線
  */
 void GBA_CPUFlushPipeline(GBA_Core *core);
 
@@ -420,12 +420,12 @@ void GBA_MemoryWrite16(GBA_Core *core, uint32_t address, uint16_t value);
 void GBA_MemoryWrite8(GBA_Core *core, uint32_t address, uint8_t value);
 
 /**
- * 獲取記憶體區域指針 (快速訪問，但要注意邊界)
+ * 獲取記憶體區域指標 (快速訪問，但要注意邊界)
  */
 uint8_t* GBA_MemoryGetRegionPointer(GBA_Core *core, MemoryRegion region);
 
 /**
- * 計算記憶體訪問周期 (包含等待狀態)
+ * 計算記憶體訪問週期 (包含等待狀態)
  */
 uint8_t GBA_MemoryGetAccessCycles(GBA_Core *core, uint32_t address, bool sequential);
 
@@ -449,7 +449,7 @@ void GBA_InterruptClear(GBA_Core *core, InterruptType type);
 bool GBA_InterruptPending(const GBA_Core *core);
 
 /**
- * 獲取最高優先級的待處理中斷
+ * 獲取最高優先順序的待處理中斷
  */
 InterruptType GBA_InterruptGetHighestPriority(const GBA_Core *core);
 
@@ -458,7 +458,7 @@ InterruptType GBA_InterruptGetHighestPriority(const GBA_Core *core);
  * ============================================================================ */
 
 /**
- * 更新 PPU (執行指定周期)
+ * 更新 PPU (執行指定週期)
  */
 void GBA_PPUUpdate(GBA_Core *core, uint32_t cycles);
 
@@ -491,7 +491,7 @@ void GBA_DMAUpdate(GBA_Core *core);
 bool GBA_DMAIsActive(const GBA_Core *core);
 
 /* ============================================================================
- * 內聯輔助函數 (性能優化)
+ * 內聯輔助函式 (效能最佳化)
  * ============================================================================ */
 
 // 獲取 CPSR 標誌位
@@ -511,7 +511,7 @@ static inline bool GBA_CPU_GetFlag_V(const GBA_CPU *cpu) {
     return (cpu->regs.cpsr >> 28) & 1;
 }
 
-// 設置 CPSR 標誌位
+// 設定 CPSR 標誌位
 static inline void GBA_CPU_SetFlag_N(GBA_CPU *cpu, bool value) {
     if (value) cpu->regs.cpsr |= (1U << 31);
     else       cpu->regs.cpsr &= ~(1U << 31);
@@ -550,7 +550,7 @@ static inline MemoryRegion GBA_MemoryGetRegion(uint32_t address) {
         case 0x0D: return MEM_REGION_ROM_WS2;
         case 0x0E:
         case 0x0F: return MEM_REGION_SRAM;
-        default:   return MEM_REGION_BIOS;  // 未映射區域
+        default:   return MEM_REGION_BIOS;  // 未對映區域
     }
 }
 
