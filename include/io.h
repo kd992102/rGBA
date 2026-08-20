@@ -1,16 +1,10 @@
 #include <stdint.h>
 #include <stdio.h>
+#include "gba.h"
 
-uint32_t wait_table_seq[16] = { // Default values
-    0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 4
-};
-uint32_t wait_table_nonseq[16] = {
-    0, 0, 2, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4
-};
-
-const uint16_t mem_bus_is_16[16] = { // 1 if the address range has a 16-bit bus
-    0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1
-};
+extern uint32_t wait_table_seq[16];
+extern uint32_t wait_table_nonseq[16];
+extern const uint16_t mem_bus_is_16[16];
 
 void MemoryAccessCyclesUpdate(void);
 
@@ -77,12 +71,12 @@ static inline uint32_t MemoryGetAccessCyclesSeq16(uint32_t address)
     return (wait_table_seq[(address >> 24) & 0xF] + 1);
 }
 
-uint32_t MemoryAddrReloc(uint32_t addr);
+uint8_t IO_Read8(GBA_Context *ctx, uint32_t addr);
+uint16_t IO_Read16(GBA_Context *ctx, uint32_t addr);
+uint32_t IO_Read32(GBA_Context *ctx, uint32_t addr);
 
-uint32_t MemRead32(uint32_t addr);
-uint16_t MemRead16(uint32_t addr);
-uint8_t MemRead8(uint32_t addr);
-void MemWrite32(uint32_t addr, uint32_t data);
-void MemWrite16(uint32_t addr, uint16_t data);
-void MemWrite8(uint32_t addr, uint8_t data);
-void PPUMemWrite16(uint32_t addr, uint16_t data);
+void IO_Write8(GBA_Context *ctx, uint32_t addr, uint8_t data);
+void IO_Write16(GBA_Context *ctx, uint32_t addr, uint16_t data);
+void IO_Write32(GBA_Context *ctx, uint32_t addr, uint32_t data);
+
+void AdvanceCycles(GBA_Context *ctx, uint32_t addr, int access_size, int seq);

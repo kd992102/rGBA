@@ -1,45 +1,45 @@
-all: main.out
+CC = clang
+CFLAGS = -I./include -Wall -Wextra -g
+BIN_DIR = bin
+SRC_DIR = src
+TEST_DIR = tests
 
-CC = gcc
-INCLUDE = .
-CFLAGS = -m32 -g
-LDLIBS = C:\msys64\mingw32\i686-w64-mingw32\lib
+# 主程式原始碼 (全部的 .c 檔)
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+# 測試用的共用原始碼 (排除 main.c，避免與測試檔的 main 衝突)
+CORE_SRC_FILES = $(filter-out $(SRC_DIR)/main.c, $(SRC_FILES))
 
-memory.o: memory.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c memory.c
+# 執行檔名稱
+MAIN_TARGET = $(BIN_DIR)/rGBA.exe
+TEST_TARGET = $(BIN_DIR)/test_io.exe
 
-arm7tdmi.o: arm7tdmi.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c arm7tdmi.c
+# 定義為偽目標 (不會產生同名檔案)
+.PHONY: all clean test
 
-main.o: main.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c main.c
+# 預設行為：編譯主程式
+all: $(BIN_DIR) $(MAIN_TARGET)
 
-arm_instruction.o: arm_instruction.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c arm_instruction.c
+# 建立 bin 目錄
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
-thumb_instruction.o: thumb_instruction.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c thumb_instruction.c
+# 編譯主程式
+$(MAIN_TARGET): $(SRC_FILES)
+	$(CC) $(CFLAGS) $^ -o $@
 
-ppu.o: ppu.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c ppu.c
+# ================================
+# 測試專用區塊
+# ================================
 
-io.o: io.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c io.c
+# 當執行 make test 時，會先確保編譯出 TEST_TARGET，然後執行它
+test: $(BIN_DIR) $(TEST_TARGET)
+	@echo "Running Tests..."
+	./$(TEST_TARGET)
 
-gba.o: gba.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c gba.c
+# 編譯測試程式
+$(TEST_TARGET): $(TEST_DIR)/test_io.c $(CORE_SRC_FILES)
+	$(CC) $(CFLAGS) $^ -o $@
 
-sound.o: sound.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c sound.c
-
-dma.o: dma.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c dma.c
-
-timer.o: timer.c
-	$(CC) -I $(INCLUDE) $(CFLAGS) -c timer.c
-
-main.out: main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o sound.o dma.o timer.o
-	$(CC) main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o sound.o dma.o timer.o -lmingw32 -lSDL2main -lSDL2 -o main
-
+# 清除編譯產生的檔案
 clean:
-	del -fR main.o memory.o arm7tdmi.o thumb_instruction.o arm_instruction.o io.o ppu.o gba.o dma.o timer.o sound.o
+	rm -rf $(BIN_DIR)/*.exe
