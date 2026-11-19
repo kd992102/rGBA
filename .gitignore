@@ -35,9 +35,6 @@
 *.i*86
 *.x86_64
 *.hex
-*.gba
-*.sav
-*.json
 
 # Debug files
 *.dSYM/
@@ -53,3 +50,23 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# --- Third-party / copyrighted assets: never commit ---
+# Supply your own GBA BIOS dump and game ROMs locally; they are not
+# distributed with this project.
+roms/gba_bios.*
+roms/pok_g_386.*
+roms/*.sav
+gbatek.html
+gbatek_files/
+arm7tdmi.pdf
+arm7tdmi.txt
+
+# Local backup of pre-cleanup history (not for publication)
+_backup_pre_cleanup/
+
+# Build output (generated; do not commit)
+build/
+bin/
+obj/
+.venv/
